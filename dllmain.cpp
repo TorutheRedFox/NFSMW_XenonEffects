@@ -133,10 +133,71 @@ unsigned int rsqrt = 0x00410220;
 unsigned int sub_478200 = 0x466520;
 unsigned int sub_6012B0 = 0x4FA510;
 
-char gNGEffectList[64];
-
-struct NGParticle
+struct XenonEffectDef
 {
+    float intensity;
+    bVector4 vel;
+    bMatrix4 mat;
+    /*Attrib::Collection*/ void* spec;
+    void* piggyback_effect;
+};
+
+namespace bstl
+{
+    class allocator
+    {
+        inline void* allocate(size_t n)
+        {
+            return FastMem_Alloc((void*)FASTMEM_ADDR, n, NULL);
+        }
+
+        inline void* deallocate(void* p, size_t n)
+        {
+            FastMem_Free((void*)FASTMEM_ADDR, p, n, NULL);
+        }
+    };
+}
+
+namespace eastl
+{
+    template <typename T, typename Allocator>
+    class __declspec(align(4)) VectorBase
+    {
+    public:
+        T* mpBegin = NULL;
+        T* mpEnd = NULL;
+        T* mpCapacity = NULL;
+        Allocator mAllocator;
+    };
+
+    template <typename T, typename Allocator>
+    class vector : public VectorBase<T, Allocator>{};
+}
+
+
+class XenonFXVec : public eastl::vector<XenonEffectDef, bstl::allocator>
+{
+};
+
+class XenonEffectList : public XenonFXVec
+{
+};
+
+
+//char gNGEffectList[64];
+XenonEffectList gNGEffectList;
+
+class NGParticle
+{
+public:
+
+    enum Flags : uint8_t
+    {
+        DEBRIS = 0x1,
+        SPAWN = 0x2,
+        BOUNCED = 0x4,
+    };
+
     struct bVector3 initialPos;
     unsigned int color;
     struct bVector3 vel;
@@ -147,7 +208,7 @@ struct NGParticle
     float age;
     unsigned char elasticity;
     unsigned char pad[3];
-    unsigned char flags;
+    Flags flags;
     unsigned char rotX;
     unsigned char rotY;
     unsigned char rotZ;
@@ -193,10 +254,10 @@ struct fuelcell_emitter_mw
     bVector4 VelocityInherit;
     bVector4 VelocityStart;
     bVector4 Colour1;
-    uint32_t emitteruv_class;
-    uint32_t emitteruv_collection;
-    uint32_t unk;
-    float life;
+    uint32_t emitteruv_classKey;
+    uint32_t emitteruv_collectionKey;
+    void* emitteruv_collection;
+    float Life;
     float NumParticlesVariance;
     float GravityStart;
     float HeightStart;
@@ -206,7 +267,7 @@ struct fuelcell_emitter_mw
     float LifeVariance;
     float NumParticles;
     uint16_t Spin;
-    uint8_t unk_0xD8782949;
+    uint8_t zSprite;
     uint8_t zContrail;
 };
 
@@ -218,10 +279,10 @@ struct fuelcell_emitter_carbon
     bVector4 VelocityInherit;
     bVector4 VelocityStart;
     bVector4 Colour1;
-    uint32_t emitteruv_class;
-    uint32_t emitteruv_collection;
-    uint32_t unk;
-    float life;
+    uint32_t emitteruv_classKey;
+    uint32_t emitteruv_collectionKey;
+    void* emitteruv_collection;
+    float Life;
     float NumParticlesVariance;
     float GravityStart;
     float HeightStart;
@@ -685,6 +746,7 @@ loc_752858:                             ; CODE XREF: eastl::vector<XenonEffectDe
     }
 }
 
+void(__thiscall* eastl_vector_DoInsertValue_XenonEffectDef_Abstract)(eastl::vector<XenonEffectDef, bstl::allocator>* vector, XenonEffectDef* position, XenonEffectDef* value) = (void(__thiscall*)(eastl::vector<XenonEffectDef, bstl::allocator>*, XenonEffectDef*, XenonEffectDef*)) & eastl_vector_DoInsertValue_XenonEffectDef;
 void(__thiscall* eastl_vector_reserve_XenonEffectDef_Abstract)(void* vector, uint32_t n) = (void(__thiscall*)(void*, uint32_t))&eastl_vector_reserve_XenonEffectDef;
 void(__thiscall* eastl_vector_erase_XenonEffectDef_Abstract)(void* vector, void* first, void* last) = (void(__thiscall*)(void*, void*, void*))&eastl_vector_erase_XenonEffectDef;
 
@@ -698,7 +760,28 @@ void __stdcall XenonEffectList_Initialize()
 
 // note: unk_9D7880 == unk_8A3028
 
-void __declspec(naked) AddXenonEffect() // (AcidEffect *piggyback_fx, Attrib::Collection *spec, UMath::Matrix4 *mat, UMath::Vector4 *vel, float intensity)
+namespace UMath
+{
+    //struct Vector4
+    //{
+    //    float x;
+    //    float y;
+    //    float z;
+    //    float w;
+    //};
+    //
+    //struct Matrix4
+    //{
+    //    Vector4 v0;
+    //    Vector4 v1;
+    //    Vector4 v2;
+    //    Vector4 v3;
+    //};
+    typedef bVector4 Vector4;
+    typedef bMatrix4 Matrix4;
+}
+
+/*void __declspec(naked) AddXenonEffect() // (AcidEffect *piggyback_fx, Attrib::Collection *spec, UMath::Matrix4 *mat, UMath::Vector4 *vel, float intensity)
 {
 	_asm
 	{
@@ -781,9 +864,46 @@ loc_754DA5:                             ; CODE XREF: AddXenonEffect(AcidEffect *
                 add     esp, 5Ch
                 retn
 	}
+}*/
+
+void __cdecl AddXenonEffect(
+    void* piggyback_fx,
+    /*Attrib::Collection*/void* spec,
+    UMath::Matrix4* mat,
+    UMath::Vector4* vel,
+    float intensity)
+{
+    XenonEffectDef newEffect; // [esp+8h] [ebp-5Ch] BYREF
+    XenonEffectDef* listPosition = gNGEffectList.mpEnd;
+
+    if (((uint32_t)gNGEffectList.mpEnd - (uint32_t)gNGEffectList.mpBegin) / sizeof(XenonEffectDef) < NGEffectListSize)
+    {
+        memcpy(&newEffect.mat, (const void*)0x8A3028, sizeof(newEffect.mat));
+        newEffect.mat.v3.x = mat->v3.x;
+        newEffect.mat.v3.y = mat->v3.y;
+        newEffect.mat.v3.z = mat->v3.z;
+        newEffect.mat.v3.w = mat->v3.w;
+        newEffect.spec = spec;
+        newEffect.vel.x = vel->x;
+        newEffect.vel.y = vel->y;
+        newEffect.vel.z = vel->z;
+        newEffect.vel.w = vel->w;
+        newEffect.piggyback_effect = piggyback_fx;
+        newEffect.intensity = intensity;
+        if ((uint32_t)gNGEffectList.mpEnd >= (uint32_t)gNGEffectList.mpCapacity)
+        {
+            eastl_vector_DoInsertValue_XenonEffectDef_Abstract(&gNGEffectList, gNGEffectList.mpEnd, &newEffect);
+        }
+        else
+        {
+            ++gNGEffectList.mpEnd;
+            if (listPosition)
+                memcpy(listPosition, &newEffect, sizeof(XenonEffectDef));
+        }
+    }
 }
 
-void(__cdecl* AddXenonEffect_Abstract)(void* piggyback_fx, void* spec, bMatrix4* mat, bVector4* vel, float intensity) = (void(__cdecl*)(void*, void*, bMatrix4*, bVector4*, float)) & AddXenonEffect;
+//void(__cdecl* AddXenonEffect_Abstract)(void* piggyback_fx, void* spec, bMatrix4* mat, bVector4* vel, float intensity) = (void(__cdecl*)(void*, void*, bMatrix4*, bVector4*, float)) & AddXenonEffect;
 
 void __declspec(naked) CalcCollisiontime()
 {
@@ -923,7 +1043,7 @@ void __declspec(naked) CalcCollisiontime()
     }
 }
 
-void __declspec(naked) BounceParticle()
+bool __declspec(naked) BounceParticle(NGParticle* particle)
 {
     _asm
     {
@@ -1040,94 +1160,121 @@ void __declspec(naked) BounceParticle()
     }
 }
 
-void __declspec(naked) ParticleList_AgeParticles()
+bool (*BounceParticle_Abstract)(NGParticle* particle) = &BounceParticle;
+
+//void __declspec(naked) ParticleList_AgeParticles()
+//{
+//    _asm
+//    {
+//                sub     esp, 10h
+//                push    ebx
+//                push    ebp
+//                mov     ebp, ecx
+//                mov     ecx, NumParticles
+//                lea     edx, NumParticles
+//                xor     eax, eax
+//                cmp     ecx, eax
+//                mov     ebx, ebp
+//                mov     [esp+8], eax
+//                mov     [esp+14h], eax
+//                mov     [esp+10h], edx
+//                jle     loc_74A24F
+//                push    esi
+//                push    edi
+//                lea     ecx, [ecx+0]
+//
+//loc_74A1C0:                             ; CODE XREF: ParticleList::AgeParticles((float))+B3↓j
+//                fld     dword ptr [esp+24h]
+//                fadd    dword ptr [ebp+34h]
+//                fst     dword ptr [esp+14h]
+//                fcomp   dword ptr [ebp+30h]
+//                fnstsw  ax
+//                test    ah, 41h
+//                jnz     short loc_74A212
+//                test    byte ptr [ebp+3Ch], 2
+//                jz      short loc_74A20D
+//                fld     dword ptr [ebp+2Ch]
+//                fsub    dword ptr [esp+14h]
+//                fst     dword ptr [ebp+2Ch]
+//                fcomp   dword ptr [esp+24h]
+//                fnstsw  ax
+//                test    ah, 41h
+//                jnz     short loc_74A20D
+//                push    ebp
+//                call    BounceParticle
+//; ---------------------------------------------------------------------------
+//                mov     edx, [esp+1Ch]
+//                add     esp, 4
+//                test    al, al
+//                jz      short loc_74A20D
+//                mov     eax, [esp+10h]
+//                add     ebx, 48h ; 'H'
+//                inc     eax
+//                mov     [esp+10h], eax
+//
+//loc_74A20D:                             ; CODE XREF: ParticleList::AgeParticles((float))+49↑j
+//                                        ; ParticleList::AgeParticles((float))+5E↑j ...
+//                add     ebp, 48h ; 'H'
+//                jmp     short loc_74A236
+//; ---------------------------------------------------------------------------
+//
+//loc_74A212:                             ; CODE XREF: ParticleList::AgeParticles((float))+43↑j
+//                fld     dword ptr [esp+24h]
+//                mov     eax, [esp+10h]
+//                mov     esi, ebp
+//                mov     edi, ebx
+//                mov     ecx, 12h
+//                rep movsd
+//                fadd    dword ptr [ebx+34h]
+//                fstp    dword ptr [ebx+34h]
+//                add     ebp, 48h ; 'H'
+//                add     ebx, 48h ; 'H'
+//                inc     eax
+//                mov     [esp+10h], eax
+//
+//loc_74A236:                             ; CODE XREF: ParticleList::AgeParticles((float))+80↑j
+//                mov     eax, [esp+1Ch]
+//                mov     ecx, [edx]
+//                inc     eax
+//                cmp     eax, ecx
+//                mov     [esp+1Ch], eax
+//                jl      loc_74A1C0
+//                mov     eax, [esp+10h]
+//                pop     edi
+//                pop     esi
+//
+//loc_74A24F:                             ; CODE XREF: ParticleList::AgeParticles((float))+25↑j
+//                pop     ebp
+//                mov     [edx], eax
+//                pop     ebx
+//                add     esp, 10h
+//                retn    4
+//    }
+//}
+
+// TODO - Move this to its corresponding class
+void __fastcall ParticleList_AgeParticles(NGParticle* _this, uint32_t dummy, float dt)
 {
-    _asm
+    size_t aliveCount = 0;
+    for (size_t i = 0; i < NumParticles; i++)
     {
-                sub     esp, 10h
-                push    ebx
-                push    ebp
-                mov     ebp, ecx
-                mov     ecx, NumParticles
-                lea     edx, NumParticles
-                xor     eax, eax
-                cmp     ecx, eax
-                mov     ebx, ebp
-                mov     [esp+8], eax
-                mov     [esp+14h], eax
-                mov     [esp+10h], edx
-                jle     loc_74A24F
-                push    esi
-                push    edi
-                lea     ecx, [ecx+0]
-
-loc_74A1C0:                             ; CODE XREF: ParticleList::AgeParticles((float))+B3↓j
-                fld     dword ptr [esp+24h]
-                fadd    dword ptr [ebp+34h]
-                fst     dword ptr [esp+14h]
-                fcomp   dword ptr [ebp+30h]
-                fnstsw  ax
-                test    ah, 41h
-                jnz     short loc_74A212
-                test    byte ptr [ebp+3Ch], 2
-                jz      short loc_74A20D
-                fld     dword ptr [ebp+2Ch]
-                fsub    dword ptr [esp+14h]
-                fst     dword ptr [ebp+2Ch]
-                fcomp   dword ptr [esp+24h]
-                fnstsw  ax
-                test    ah, 41h
-                jnz     short loc_74A20D
-                push    ebp
-                call    BounceParticle
-; ---------------------------------------------------------------------------
-                mov     edx, [esp+1Ch]
-                add     esp, 4
-                test    al, al
-                jz      short loc_74A20D
-                mov     eax, [esp+10h]
-                add     ebx, 48h ; 'H'
-                inc     eax
-                mov     [esp+10h], eax
-
-loc_74A20D:                             ; CODE XREF: ParticleList::AgeParticles((float))+49↑j
-                                        ; ParticleList::AgeParticles((float))+5E↑j ...
-                add     ebp, 48h ; 'H'
-                jmp     short loc_74A236
-; ---------------------------------------------------------------------------
-
-loc_74A212:                             ; CODE XREF: ParticleList::AgeParticles((float))+43↑j
-                fld     dword ptr [esp+24h]
-                mov     eax, [esp+10h]
-                mov     esi, ebp
-                mov     edi, ebx
-                mov     ecx, 12h
-                rep movsd
-                fadd    dword ptr [ebx+34h]
-                fstp    dword ptr [ebx+34h]
-                add     ebp, 48h ; 'H'
-                add     ebx, 48h ; 'H'
-                inc     eax
-                mov     [esp+10h], eax
-
-loc_74A236:                             ; CODE XREF: ParticleList::AgeParticles((float))+80↑j
-                mov     eax, [esp+1Ch]
-                mov     ecx, [edx]
-                inc     eax
-                cmp     eax, ecx
-                mov     [esp+1Ch], eax
-                jl      loc_74A1C0
-                mov     eax, [esp+10h]
-                pop     edi
-                pop     esi
-
-loc_74A24F:                             ; CODE XREF: ParticleList::AgeParticles((float))+25↑j
-                pop     ebp
-                mov     [edx], eax
-                pop     ebx
-                add     esp, 10h
-                retn    4
+        NGParticle& particle = _this[i];
+        if ((particle.age + dt) <= particle.life)
+        {
+            memcpy(&_this[aliveCount], &_this[i], sizeof(NGParticle));
+            _this[aliveCount].age += dt;
+            aliveCount++;
+        }
+        else if (particle.flags & NGParticle::Flags::SPAWN)
+        {
+            particle.remainingLife -= particle.age + dt;
+            if (particle.remainingLife > dt && BounceParticle_Abstract(&particle))
+            {
+                aliveCount++;
+            }
+        }
     }
+    NumParticles = aliveCount;
 }
 
 char fuelcell_attrib_buffer5[20];
@@ -2443,14 +2590,14 @@ uint32_t SparkFC = 0;
 void AddXenonEffect_Spark_Hook(void* piggyback_fx, void* spec, bMatrix4* mat, bVector4* vel, float intensity)
 {
     if (!bLimitSparkRate)
-        return AddXenonEffect_Abstract(piggyback_fx, spec, mat, vel, SparkIntensity);
+        return AddXenonEffect(piggyback_fx, spec, mat, vel, SparkIntensity);
 
     if ((SparkFC + SparkFrameDelay) <= eFrameCounter)
     {
         if (SparkFC != eFrameCounter)
         {
             SparkFC = eFrameCounter;
-            AddXenonEffect_Abstract(piggyback_fx, spec, mat, vel, SparkIntensity);
+            AddXenonEffect(piggyback_fx, spec, mat, vel, SparkIntensity);
         }
     }
 }
@@ -2484,14 +2631,14 @@ void AddXenonEffect_Contrail_Hook(void* piggyback_fx, void* spec, bMatrix4* mat,
     newmat.v3.w = 1.00f;
 
     if (!bLimitContrailRate)
-        AddXenonEffect_Abstract(piggyback_fx, spec, &newmat, &newvel, 1.0f);
+        AddXenonEffect(piggyback_fx, spec, &newmat, &newvel, 1.0f);
 
     if ((ContrailFC + ContrailFrameDelay) <= eFrameCounter)
     {
         if (ContrailFC != eFrameCounter)
         {
             ContrailFC = eFrameCounter;
-            AddXenonEffect_Abstract(piggyback_fx, spec, &newmat, &newvel, 1.0f);
+            AddXenonEffect(piggyback_fx, spec, &newmat, &newvel, 1.0f);
         }
     }
     // TEST CODE
@@ -2508,14 +2655,14 @@ void AddXenonEffect_Contrail_Hook(void* piggyback_fx, void* spec, bMatrix4* mat,
     }
 
     if (!bLimitContrailRate)
-        return AddXenonEffect_Abstract(piggyback_fx, spec, mat, vel, newintensity);
+        return AddXenonEffect(piggyback_fx, spec, mat, vel, newintensity);
 
     if ((ContrailFC + ContrailFrameDelay) <= eFrameCounter)
     {
         if (ContrailFC != eFrameCounter)
         {
             ContrailFC = eFrameCounter;
-            AddXenonEffect_Abstract(piggyback_fx, spec, mat, vel, newintensity);
+            AddXenonEffect(piggyback_fx, spec, mat, vel, newintensity);
         }
     }
 #endif
