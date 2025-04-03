@@ -219,16 +219,94 @@ public:
     unsigned char uv[4];
 };
 
-//struct ParticleList
-//{
-//    NGParticle mParticles[MAX_PARTICLES];
-//    unsigned int mNumParticles;
-//}gParticleList;
+class ParticleList
+{
+public:
+    NGParticle* mParticles;// [1000] ;
+    unsigned int mNumParticles;
+    void AgeParticles(float dt);
+};
 
-NGParticle* gParticleList;
-uint32_t NumParticles = 0;
+ParticleList gParticleList;
+//uint32_t NumParticles = 0;
 
 //#define numParticles dword ptr gParticleList[PARTICLELIST_SIZE]
+
+// TODO - replace this with proper Attrib bridge
+namespace Attrib
+{
+    struct HashMap
+    {
+        void* mTable;
+        unsigned __int32 mTableSize;
+        unsigned __int32 mNumEntries;
+        unsigned __int16 mWorstCollision;
+        unsigned __int16 mKeyShift;
+    };
+
+    struct Collection
+    {
+        Attrib::HashMap mTable;
+        void* mParent;
+        void* mClass;
+        void* mLayout;
+        unsigned int mRefCount;
+        unsigned int mKey;
+        void* mSource;
+        const char* mNamePtr;
+    };
+
+    struct Instance
+    {
+        void* mOwner;
+        Attrib::Collection* mCollection;
+        void* mLayoutPtr;
+        unsigned int mMsgPort;
+        unsigned __int16 mFlags;
+        unsigned __int16 mLocks;
+    };
+
+    struct RefSpec
+    {
+        uint32_t mClassKey;
+        uint32_t mCollectionKey;
+        Attrib::Collection* mCollectionPtr;
+    };
+
+    namespace Gen
+    {
+        class fuelcell_effect : Attrib::Instance
+        {
+            struct _LayoutStruct
+            {
+                bool doTest;
+            };
+        };
+    }
+}
+
+class NGEffect
+{
+public:
+    Attrib::Gen::fuelcell_effect mEffectDef;
+};
+
+struct SpriteManager
+{
+    IDirect3DVertexBuffer9* vertex_buffer;
+    IDirect3DIndexBuffer9* index_buffer;
+    uint32_t unk1;
+    uint32_t unk2;
+    uint32_t vert_count;
+    void* mTexture;
+};
+
+struct eView
+{
+    void* PlatInfo;
+    uint32_t EVIEW_ID;
+};
+
 
 float flt_9C92F0 = 255.0f;
 float flt_9C2478 = 1.0f;
@@ -1253,16 +1331,16 @@ bool (*BounceParticle_Abstract)(NGParticle* particle) = &BounceParticle;
 //}
 
 // TODO - Move this to its corresponding class
-void __fastcall ParticleList_AgeParticles(NGParticle* _this, uint32_t dummy, float dt)
+void ParticleList::AgeParticles(float dt)
 {
     size_t aliveCount = 0;
-    for (size_t i = 0; i < NumParticles; i++)
+    for (size_t i = 0; i <mNumParticles; i++)
     {
-        NGParticle& particle = _this[i];
+        NGParticle& particle = mParticles[i];
         if ((particle.age + dt) <= particle.life)
         {
-            memcpy(&_this[aliveCount], &_this[i], sizeof(NGParticle));
-            _this[aliveCount].age += dt;
+            memcpy(&mParticles[aliveCount], &mParticles[i], sizeof(NGParticle));
+            mParticles[aliveCount].age += dt;
             aliveCount++;
         }
         else if (particle.flags & NGParticle::Flags::SPAWN)
@@ -1274,7 +1352,7 @@ void __fastcall ParticleList_AgeParticles(NGParticle* _this, uint32_t dummy, flo
             }
         }
     }
-    NumParticles = aliveCount;
+    mNumParticles = aliveCount;
 }
 
 char fuelcell_attrib_buffer5[20];
@@ -1469,17 +1547,17 @@ loc_73F50C:                             ; CODE XREF: CGEmitter::SpawnParticles(f
 
 loc_73F540:                             ; CODE XREF: CGEmitter::SpawnParticles(float,float)+5ED↓j
                 fld     dword ptr [esp+20h]
-                mov     eax, NumParticles
+                mov     eax, dword ptr[gParticleList.mNumParticles]
                 cmp     eax, MaxParticles
                 fsub    ds:flt_9C2478
                 fstp    dword ptr [esp+20h]
                 jnb     loc_73F913
                 lea     esi, [eax+eax*8]
-                mov ecx, gParticleList
+                mov ecx, dword ptr[gParticleList.mParticles]
                 lea     esi, [ecx+esi*8] ; ParticleList gParticleList
                 inc     eax
                 test    esi, esi
-                mov     NumParticles, eax
+                mov     dword ptr[gParticleList.mNumParticles], eax
                 jz      loc_73F913
                 mov     eax, [ebp+4]
                 mov     ecx, [eax+84h]
@@ -1945,16 +2023,13 @@ unsigned int __stdcall Attrib_Gen_fuelcell_effect_Num_NGEmitter()
 
 // copies the object back to MW's format to avoid crashing during Attrib garbage collection
 char fuelcell_attrib_buffer4[20];
-void __stdcall Attrib_Instance_Dtor_Shim()
+void __fastcall Attrib_Instance_Dtor_Shim(void *_this)
 {
-    uint32_t that;
-    _asm mov that, ecx
-
     memset(fuelcell_attrib_buffer4, 0, 20);
-    memcpy(&(fuelcell_attrib_buffer4[4]), (void*)that, 16);
-    memcpy((void*)that, fuelcell_attrib_buffer4, 20);
+    memcpy(&(fuelcell_attrib_buffer4[4]), (void*)_this, 16);
+    memcpy((void*)_this, fuelcell_attrib_buffer4, 20);
 
-    Attrib_Instance_Dtor((void*)that);
+    Attrib_Instance_Dtor((void*)_this);
 }
 
 
@@ -2052,6 +2127,8 @@ loc_74A36E:
                 jmp     short loc_74A355
     }
 }
+
+void(__thiscall* NGEffect_NGEffect_Abstract)(NGEffect* _this, XenonEffectDef* eDef, float dt) = (void(__thiscall*)(NGEffect *, XenonEffectDef *, float)) & NGEffect_NGEffect;
 
 void __declspec(naked) XSpriteManager_AddParticle()
 {
@@ -2259,84 +2336,115 @@ void __declspec(naked) XSpriteManager_AddParticle()
     }
 }
 
-void __declspec(naked) DrawXenonEmitters(void* eView)
+void (__thiscall* XSpriteManager_AddParticle_Abstract)(void* _this,
+        eView *view,
+        NGParticle *particleList,
+        const unsigned int numParticles) = (void (__thiscall*)(void*, eView*, NGParticle*, const unsigned int))&XSpriteManager_AddParticle;
+
+//void __declspec(naked) DrawXenonEmitters(void* eView)
+//{
+//    _asm
+//    {
+//        push    ebp
+//        mov     ebp, esp
+//        and esp, 0FFFFFFF8h
+//        sub     esp, 74h
+//        mov     eax, EmitterDeltaTime
+//        push    ebx
+//        push    esi
+//        mov     ecx, eax
+//        push    edi
+//        push    ecx; float
+//        mov     ecx, offset gParticleList
+//        mov[esp + 10h], eax
+//        mov     EmitterDeltaTime, 0
+//        call    ParticleList::AgeParticles
+//        mov     ebx, dword ptr gNGEffectList
+//        mov     edx, dword ptr gNGEffectList[4]
+//        cmp     ebx, edx
+//        jz      loc_754C78
+//        lea     esp, [esp + 0]
+//
+//        loc_754C30:
+//        mov     ecx, 17h
+//        mov     esi, ebx
+//        lea     edi, [esp + 20h]
+//        rep movsd
+//        mov     eax, [esp + 78h]
+//        test    eax, eax
+//        jz      loc_754C4F
+//        mov     eax, [eax + 18h]
+//        shr     eax, 4
+//        test    al, 1
+//        jz      loc_754C71
+//
+//        loc_754C4F:
+//        mov     ecx, [esp + 0Ch]
+//        push    ecx
+//        lea     edx, [esp + 24h]
+//        push    edx
+//        lea     ecx, [esp + 18h]
+//        call    NGEffect_NGEffect
+//        lea     ecx, [esp + 10h]
+//        call    Attrib_Instance_Dtor_Shim
+//        mov     edx, dword ptr gNGEffectList[4]
+//
+//        loc_754C71:
+//        add     ebx, 5Ch; '\'
+//        cmp     ebx, edx
+//        jnz     loc_754C30
+//
+//        loc_754C78 : ; CODE XREF : DrawXenonEmitters(eView*) + 3A↑j
+//        mov     eax, dword ptr gNGEffectList
+//        push    edx
+//        push    eax
+//        mov     ecx, offset gNGEffectList
+//        call    eastl_vector_erase_XenonEffectDef
+//        mov     eax, dword ptr [gParticleList.mNumParticles]
+//        test    eax, eax
+//        jz      loc_754CA6
+//        mov     ecx, [ebp + 8]
+//        push    eax
+//        push    gParticleList.mParticles
+//        push    ecx
+//        mov     ecx, offset NGSpriteManager
+//        call    XSpriteManager_AddParticle
+//
+//        loc_754CA6:; CODE XREF : DrawXenonEmitters(eView*) + A0↑j
+//        pop     edi
+//        pop     esi
+//        pop     ebx
+//        mov     esp, ebp
+//        pop     ebp
+//        retn
+//    }
+//}
+
+void DrawXenonEmitters(eView *view)
 {
-    _asm
+    XenonEffectDef* mpBegin; // ebx
+    XenonEffectDef* i; // edx
+    NGEffect effect; // [esp-4h] [ebp-84h]
+    XenonEffectDef effectDef; // [esp+20h] [ebp-60h] BYREF
+
+    gParticleList.AgeParticles(EmitterDeltaTime);
+    mpBegin = gNGEffectList.mpBegin;
+    for (i = gNGEffectList.mpEnd; mpBegin != i; ++mpBegin)
     {
-        push    ebp
-        mov     ebp, esp
-        and esp, 0FFFFFFF8h
-        sub     esp, 74h
-        mov     eax, EmitterDeltaTime
-        push    ebx
-        push    esi
-        mov     ecx, eax
-        push    edi
-        push    ecx; float
-        mov     ecx, gParticleList
-        mov[esp + 10h], eax
-        mov     EmitterDeltaTime, 0
-        call    ParticleList_AgeParticles
-        mov     ebx, dword ptr gNGEffectList
-        mov     edx, dword ptr gNGEffectList[4]
-        cmp     ebx, edx
-        jz      loc_754C78
-        lea     esp, [esp + 0]
-
-        loc_754C30:
-        mov     ecx, 17h
-        mov     esi, ebx
-        lea     edi, [esp + 20h]
-        rep movsd
-        mov     eax, [esp + 78h]
-        test    eax, eax
-        jz      loc_754C4F
-        mov     eax, [eax + 18h]
-        shr     eax, 4
-        test    al, 1
-        jz      loc_754C71
-
-        loc_754C4F:
-        mov     ecx, [esp + 0Ch]
-        push    ecx
-        lea     edx, [esp + 24h]
-        push    edx
-        lea     ecx, [esp + 18h]
-        call    NGEffect_NGEffect
-        lea     ecx, [esp + 10h]
-        call    Attrib_Instance_Dtor_Shim
-        mov     edx, dword ptr gNGEffectList[4]
-
-        loc_754C71:
-        add     ebx, 5Ch; '\'
-        cmp     ebx, edx
-        jnz     loc_754C30
-
-        loc_754C78 : ; CODE XREF : DrawXenonEmitters(eView*) + 3A↑j
-        mov     eax, dword ptr gNGEffectList
-        push    edx
-        push    eax
-        mov     ecx, offset gNGEffectList
-        call    eastl_vector_erase_XenonEffectDef
-        mov     eax, NumParticles
-        test    eax, eax
-        jz      loc_754CA6
-        mov     ecx, [ebp + 8]
-        push    eax
-        push    gParticleList
-        push    ecx
-        mov     ecx, offset NGSpriteManager
-        call    XSpriteManager_AddParticle
-
-        loc_754CA6:; CODE XREF : DrawXenonEmitters(eView*) + A0↑j
-        pop     edi
-        pop     esi
-        pop     ebx
-        mov     esp, ebp
-        pop     ebp
-        retn
+        memcpy(&effectDef, mpBegin, sizeof(effectDef));
+        if (!effectDef.piggyback_effect || (*((uint32_t*)effectDef.piggyback_effect + 6) & 0x10) != 0)
+        {
+            NGEffect_NGEffect_Abstract(&effect, &effectDef, EmitterDeltaTime);
+            Attrib_Instance_Dtor_Shim(&effect.mEffectDef);
+            i = gNGEffectList.mpEnd;
+        }
     }
+    EmitterDeltaTime = 0.0f;
+    eastl_vector_erase_XenonEffectDef_Abstract(&gNGEffectList, gNGEffectList.mpBegin, gNGEffectList.mpEnd);
+    if (gParticleList.mNumParticles)
+        XSpriteManager_AddParticle_Abstract(NGSpriteManager, view, gParticleList.mParticles, gParticleList.mNumParticles);
 }
+
 // RENDERER STUFF START
 void __declspec(naked) sub_743DF0()
 {
@@ -2446,22 +2554,6 @@ void __declspec(naked) sub_743DF0()
     }
 }
 
-struct SpriteManager
-{
-    IDirect3DVertexBuffer9* vertex_buffer;
-    IDirect3DIndexBuffer9* index_buffer;
-    uint32_t unk1;
-    uint32_t unk2;
-    uint32_t vert_count;
-    void* mTexture;
-};
-
-struct eView
-{
-    void* PlatInfo;
-    uint32_t EVIEW_ID;
-};
-
 void __declspec(naked) InitializeRenderObj()
 {
     _asm
@@ -2516,7 +2608,7 @@ void __stdcall XSpriteManager_DrawBatch(eView* view)
     effect->BeginPass(0);
 
     g_D3DDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
-    if (sm->vert_count && NumParticles)
+    if (sm->vert_count && gParticleList.mNumParticles)
     {
         g_D3DDevice->SetStreamSource(0, sm->vertex_buffer, 0, 0x18);
         g_D3DDevice->SetIndices(sm->index_buffer);
@@ -2980,7 +3072,7 @@ void InitConfig()
 int Init()
 {
     // allocate for effect list
-    gParticleList = (NGParticle*)calloc(MaxParticles, sizeof(NGParticle));
+    gParticleList.mParticles = (NGParticle*)calloc(MaxParticles, sizeof(NGParticle));
     
     // delta time stealer
     injector::MakeCALL(0x0050D43C, EmitterSystem_Update_Hook, true);
