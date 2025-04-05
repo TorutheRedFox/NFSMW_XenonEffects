@@ -31,6 +31,8 @@ bool bNISContrails = false;
 bool bUseCGStyle = false;
 bool bPassShadowMap = false;
 bool bUseD3DDeviceTexture = false;
+bool bBounceParticles = true;
+bool bCarbonBounceBehavior = false;
 float ContrailTargetFPS = 30.0f;
 float SparkTargetFPS = 60.0f;
 float ContrailSpeed = 44.0f;
@@ -38,8 +40,8 @@ float ContrailMinIntensity = 0.1f;
 float ContrailMaxIntensity = 0.75f;
 float SparkIntensity = 1.0f;
 char TPKfilename[128] = { "GLOBAL\\XenonEffects.tpk" };
-uint32_t MaxParticles = 10000;
-uint32_t NGEffectListSize = 500;
+uint32_t MaxParticles = 2048; // MW default
+uint32_t NGEffectListSize = 100; // MW default
 
 uint32_t ContrailFrameDelay = 1;
 uint32_t SparkFrameDelay = 1;
@@ -74,6 +76,38 @@ struct bVector3
         this->x *= b.x;
         this->y *= b.y;
         this->z *= b.z;
+        return *this;
+    }
+
+    inline bVector3& operator+(const bVector3& b)
+    {
+        this->x += b.x;
+        this->y += b.y;
+        this->z += b.z;
+        return *this;
+    }
+
+    inline bVector3& operator+=(const bVector3& b)
+    {
+        this->x += b.x;
+        this->y += b.y;
+        this->z += b.z;
+        return *this;
+    }
+
+    inline bVector3& operator-(const bVector3& b)
+    {
+        this->x -= b.x;
+        this->y -= b.y;
+        this->z -= b.z;
+        return *this;
+    }
+
+    inline bVector3& operator-=(const bVector3& b)
+    {
+        this->x -= b.x;
+        this->y -= b.y;
+        this->z -= b.z;
         return *this;
     }
 
@@ -1114,91 +1148,6 @@ void __stdcall XenonEffectList_Initialize()
 
 // note: unk_9D7880 == unk_8A3028
 
-/*void __declspec(naked) AddXenonEffect() // (AcidEffect *piggyback_fx, Attrib::Collection *spec, UMath::Matrix4 *mat, UMath::Vector4 *vel, float intensity)
-{
-	_asm
-	{
-                sub     esp, 5Ch
-                push    ebx
-                mov     ebx, dword ptr gNGEffectList[0]
-                push    edi
-                mov     edi, dword ptr gNGEffectList[4]
-                mov     ecx, ebx
-                sub     ecx, edi
-                mov     eax, 0B21642C9h
-                imul    ecx
-                add     edx, ecx
-                sar     edx, 6
-                mov     eax, edx
-                shr     eax, 1Fh
-                add     eax, edx
-                cmp     eax, NGEffectListSize; 'd'
-                jnb     loc_754DA5
-                push    esi
-                mov     ecx, 10h
-                mov     esi, 0x8A3028
-                lea     edi, [esp+20h]
-                rep movsd
-                mov     ecx, [esp+74h]
-                add     ecx, 30h ; '0'
-                mov     edx, [ecx]
-                mov     eax, [ecx+4]
-                mov     [esp+50h], edx
-                mov     edx, [ecx+8]
-                mov     [esp+54h], eax
-                mov     eax, [ecx+0Ch]
-                mov     ecx, [esp+70h]
-                mov     [esp+58h], edx
-                mov     edx, [esp+78h]
-                mov     [esp+5Ch], eax
-                mov     eax, [edx]
-                mov     [esp+60h], ecx
-                mov     ecx, [edx+4]
-                mov     [esp+10h], eax
-                mov     eax, [edx+8]
-                mov     [esp+18h], eax
-                mov     eax, [esp+6Ch]
-                mov     [esp+14h], ecx
-                mov     ecx, [edx+0Ch]
-                mov     edx, [esp+7Ch]
-                mov     [esp+64h], eax
-                cmp     ebx, dword ptr gNGEffectList[8]
-                mov     [esp+1Ch], ecx
-                mov     [esp+0Ch], edx
-                jnb     loc_754D94
-                mov     edi, ebx
-                add     ebx, 5Ch ; '\'
-                test    edi, edi
-                mov     dword ptr gNGEffectList[4], ebx
-                jz      loc_754DA4
-                mov     ecx, 17h
-                lea     esi, [esp+0Ch]
-                rep movsd
-                pop     esi
-                pop     edi
-                pop     ebx
-                add     esp, 5Ch
-                retn
-; ---------------------------------------------------------------------------
-
-loc_754D94:                             ; CODE XREF: AddXenonEffect(AcidEffect *,Attrib::Collection const *,UMath::Matrix4 const *,UMath::Vector4 const *,float)+A1↑j
-                lea     ecx, [esp+0Ch]
-                push    ecx
-                push    ebx
-                mov     ecx, offset gNGEffectList
-                call    eastl_vector_DoInsertValue_XenonEffectDef ; eastl::vector<XenonEffectDef,bstl::allocator>::DoInsertValue(XenonEffectDef *,XenonEffectDef const &)
-
-loc_754DA4:                             ; CODE XREF: AddXenonEffect(AcidEffect *,Attrib::Collection const *,UMath::Matrix4 const *,UMath::Vector4 const *,float)+B0↑j
-                pop     esi
-
-loc_754DA5:                             ; CODE XREF: AddXenonEffect(AcidEffect *,Attrib::Collection const *,UMath::Matrix4 const *,UMath::Vector4 const *,float)+2B↑j
-                pop     edi
-                pop     ebx
-                add     esp, 5Ch
-                retn
-	}
-}*/
-
 void __cdecl AddXenonEffect(
     void* piggyback_fx,
     /*Attrib::Collection*/void* spec,
@@ -1235,8 +1184,6 @@ void __cdecl AddXenonEffect(
         }
     }
 }
-
-//void(__cdecl* AddXenonEffect_Abstract)(void* piggyback_fx, void* spec, bMatrix4* mat, bVector4* vel, float intensity) = (void(__cdecl*)(void*, void*, bMatrix4*, bVector4*, float)) & AddXenonEffect;
 
 void __declspec(naked) CalcCollisiontime(NGParticle* particle)
 {
@@ -1378,271 +1325,58 @@ void __declspec(naked) CalcCollisiontime(NGParticle* particle)
 
 void(*CalcCollisiontime_Abstract)(NGParticle* particle) = (void(*)(NGParticle*))&CalcCollisiontime;
 
-//bool __declspec(naked) BounceParticle(NGParticle* particle)
-//{
-//    _asm
-//    {
-//                sub     esp, 18h
-//                push    esi
-//                mov     esi, [esp+20h]
-//                fld     dword ptr [esi+30h]
-//                push    edi
-//                fld     st
-//                lea     edi, [esi+10h]
-//                fmul    dword ptr [edi]
-//                mov     eax, esi
-//                fadd    dword ptr [esi]
-//                fstp    dword ptr [esp+14h]
-//                mov     ecx, [esp+14h]
-//                fld     st
-//                fmul    dword ptr [edi+4]
-//                fadd    dword ptr [esi+4]
-//                fstp    dword ptr [esp+18h]
-//                mov     edx, [esp+18h]
-//                fld     st
-//                fmul    dword ptr [esi+1Ch]
-//                fld     st(1)
-//                fmul    dword ptr [edi+8]
-//                fadd    dword ptr [esi+8]
-//                fld     st(1)
-//                mov     [eax], ecx
-//                fmul    st, st(3)
-//                mov     [eax+4], edx
-//                mov     edx, edi
-//                faddp   st(1), st
-//                fstp    dword ptr [esp+1Ch]
-//                mov     ecx, [esp+1Ch]
-//                mov     [eax+8], ecx
-//                mov     eax, [edx]
-//                fadd    st, st
-//                mov     ecx, [edx+4]
-//                mov     edx, [edx+8]
-//                mov     [esp+1Ch], edx
-//                fadd    dword ptr [esp+1Ch]
-//                mov     [esp+0Ch], ecx
-//                mov     [esp+8], eax
-//                fstp    dword ptr [esp+1Ch]
-//                mov     eax, [esp+1Ch]
-//                lea     ecx, [esp+8]
-//                push    ecx             ; float
-//                fstp    st
-//                mov     [esp+14h], eax
-//                call    rsqrt
-//                fld     dword ptr [esp+14h]
-//                fmul    dword ptr [esi+28h]
-//                movzx   edx, byte ptr [esi+38h]
-//                fld     dword ptr [esp+10h]
-//                fmul    dword ptr [esi+24h]
-//                faddp   st(1), st
-//                fld     dword ptr [esp+0Ch]
-//                fmul    dword ptr [esi+20h]
-//                faddp   st(1), st
-//                fadd    st, st
-//                fld     st
-//                fmul    dword ptr [esi+20h]
-//                fld     st(1)
-//                fmul    dword ptr [esi+24h]
-//                fstp    dword ptr [esp+1Ch]
-//                fxch    st(1)
-//                fmul    dword ptr [esi+28h]
-//                fstp    dword ptr [esp+20h]
-//                fld     dword ptr [esp+0Ch]
-//                fsub    st, st(1)
-//                fstp    dword ptr [esp+18h]
-//                fstp    st
-//                fld     dword ptr [esp+10h]
-//                fsub    dword ptr [esp+1Ch]
-//                fstp    dword ptr [esp+1Ch]
-//                fld     dword ptr [esp+14h]
-//                fsub    dword ptr [esp+20h]
-//                fstp    dword ptr [esp+20h]
-//                mov     [esp+28h], edx
-//                fimul   dword ptr [esp+28h]
-//                push    esi
-//                mov     dword ptr [esi+34h], 0
-//                fmul    ds:flt_9C77C8
-//                fld     dword ptr [esp+1Ch]
-//                fmul    st, st(1)
-//                fld     dword ptr [esp+20h]
-//                fmul    st, st(2)
-//                fld     dword ptr [esp+24h]
-//                fmul    st, st(3)
-//                fstp    dword ptr [esp+18h]
-//                mov     eax, [esp+18h]
-//                fxch    st(1)
-//                mov     [esp+24h], eax
-//                fstp    dword ptr [esp+1Ch]
-//                mov     ecx, [esp+1Ch]
-//                mov     [edi], ecx
-//                mov     cl, [esi+3Ch]
-//                fstp    dword ptr [esp+20h]
-//                mov     edx, [esp+20h]
-//                mov     [edi+4], edx
-//                fstp    st
-//                mov     edx, [esi+2Ch]
-//                and     cl, 1
-//                or      cl, 4
-//                mov     [edi+8], eax
-//                mov     [esi+3Ch], cl
-//                mov     [esi+30h], edx
-//                call    CalcCollisiontime
-//                add     esp, 8
-//                pop     edi
-//                mov     al, 1
-//                pop     esi
-//                add     esp, 18h
-//                retn
-//    }
-//}
-
 bool __cdecl BounceParticle(NGParticle* particle)
 {
-    float life; // fp0
-    float gravity; // fp11
-    //float velocityZ; // r8
-    float gravityOverTime; // fp13
-    float offset; // fp10
-    float velocityMagnitude; // fp0
-    unsigned char elasticity; // r10
+    if (!bBounceParticles)
+        return true;
+
+    float life;
+    float gravity;
+    float gravityOverTime;
+    float velocityMagnitude;
     NGParticle::Flags flags;
-    //float velocityX; // [sp+50h] [-40h]
-    //float velocityZGravity; // [sp+58h] [-38h]
-    //float velocityY; // [sp+64h] [-2Ch]
     UMath::Vector3 newVelocity;
-
-    life = particle->life;
+    
+    life = particle->life; // / 8191.0f; // MW multiplies life by 8191 when spawning the particle, but Carbon does not
     gravity = particle->gravity;
-
+    
     newVelocity.x = particle->vel.x;
     newVelocity.y = particle->vel.y;
     newVelocity.z = particle->vel.z;
-
-    gravityOverTime = (particle->gravity * particle->life);
-    offset = ((newVelocity.z * particle->life) + particle->initialPos.z);
-    particle->initialPos.x = (newVelocity.x * particle->life) + particle->initialPos.x;
     
-    newVelocity.z = ((gravity * life) * 2.0f) + newVelocity.z;
-    particle->initialPos.y = (newVelocity.y * particle->life) + particle->initialPos.y;
-    particle->initialPos.z = (gravityOverTime * life) + offset;
+    gravityOverTime = particle->gravity * life;
+    
+    particle->initialPos.x += (newVelocity.x * life);
+    particle->initialPos.y += (newVelocity.y * life);
+    particle->initialPos.z += (gravityOverTime * life) + (newVelocity.z * life);
+    
+    if (bCarbonBounceBehavior) // carbon modification
+        gravityOverTime *= 2.0f;
+
+    newVelocity.z += gravityOverTime;
     
     velocityMagnitude = UMath::Length(newVelocity);
-
+    
     newVelocity = UMath::Normalize(newVelocity);
-
-    elasticity = particle->elasticity;
+    
     flags = particle->flags;
     particle->life = particle->remainingLife;
     particle->age = 0.0;
     particle->flags = flags & NGParticle::Flags::DEBRIS | NGParticle::Flags::BOUNCED;
     
     float bounceCos = UMath::Dot(newVelocity, particle->impactNormal);
-
-    // carbon modifications
-    //velocityMagnitude *= elasticity / 255.0f;
-    //bounceCos *= 2.0f;
-
-    particle->vel.x = (newVelocity.x - (particle->impactNormal.x * bounceCos)) * velocityMagnitude;
-    particle->vel.y = (newVelocity.y - (particle->impactNormal.y * bounceCos)) * velocityMagnitude;
-    particle->vel.z = (newVelocity.z - (particle->impactNormal.z * bounceCos)) * velocityMagnitude;
     
-    CalcCollisiontime_Abstract(particle);
-
+    if (bCarbonBounceBehavior) // MW didn't have elasticity
+        velocityMagnitude *= particle->elasticity / 255.0f;
+    
+    particle->vel = (newVelocity - (particle->impactNormal * bounceCos * 2.0f)) * velocityMagnitude;
+    
+    if (bCarbonBounceBehavior) // MW doesn't call this here
+        CalcCollisiontime_Abstract(particle);
+    
     return true;
 }
 
-//bool (*BounceParticle_Abstract)(NGParticle* particle) = &BounceParticle;
-
-//void __declspec(naked) ParticleList_AgeParticles()
-//{
-//    _asm
-//    {
-//                sub     esp, 10h
-//                push    ebx
-//                push    ebp
-//                mov     ebp, ecx
-//                mov     ecx, NumParticles
-//                lea     edx, NumParticles
-//                xor     eax, eax
-//                cmp     ecx, eax
-//                mov     ebx, ebp
-//                mov     [esp+8], eax
-//                mov     [esp+14h], eax
-//                mov     [esp+10h], edx
-//                jle     loc_74A24F
-//                push    esi
-//                push    edi
-//                lea     ecx, [ecx+0]
-//
-//loc_74A1C0:                             ; CODE XREF: ParticleList::AgeParticles((float))+B3↓j
-//                fld     dword ptr [esp+24h]
-//                fadd    dword ptr [ebp+34h]
-//                fst     dword ptr [esp+14h]
-//                fcomp   dword ptr [ebp+30h]
-//                fnstsw  ax
-//                test    ah, 41h
-//                jnz     short loc_74A212
-//                test    byte ptr [ebp+3Ch], 2
-//                jz      short loc_74A20D
-//                fld     dword ptr [ebp+2Ch]
-//                fsub    dword ptr [esp+14h]
-//                fst     dword ptr [ebp+2Ch]
-//                fcomp   dword ptr [esp+24h]
-//                fnstsw  ax
-//                test    ah, 41h
-//                jnz     short loc_74A20D
-//                push    ebp
-//                call    BounceParticle
-//; ---------------------------------------------------------------------------
-//                mov     edx, [esp+1Ch]
-//                add     esp, 4
-//                test    al, al
-//                jz      short loc_74A20D
-//                mov     eax, [esp+10h]
-//                add     ebx, 48h ; 'H'
-//                inc     eax
-//                mov     [esp+10h], eax
-//
-//loc_74A20D:                             ; CODE XREF: ParticleList::AgeParticles((float))+49↑j
-//                                        ; ParticleList::AgeParticles((float))+5E↑j ...
-//                add     ebp, 48h ; 'H'
-//                jmp     short loc_74A236
-//; ---------------------------------------------------------------------------
-//
-//loc_74A212:                             ; CODE XREF: ParticleList::AgeParticles((float))+43↑j
-//                fld     dword ptr [esp+24h]
-//                mov     eax, [esp+10h]
-//                mov     esi, ebp
-//                mov     edi, ebx
-//                mov     ecx, 12h
-//                rep movsd
-//                fadd    dword ptr [ebx+34h]
-//                fstp    dword ptr [ebx+34h]
-//                add     ebp, 48h ; 'H'
-//                add     ebx, 48h ; 'H'
-//                inc     eax
-//                mov     [esp+10h], eax
-//
-//loc_74A236:                             ; CODE XREF: ParticleList::AgeParticles((float))+80↑j
-//                mov     eax, [esp+1Ch]
-//                mov     ecx, [edx]
-//                inc     eax
-//                cmp     eax, ecx
-//                mov     [esp+1Ch], eax
-//                jl      loc_74A1C0
-//                mov     eax, [esp+10h]
-//                pop     edi
-//                pop     esi
-//
-//loc_74A24F:                             ; CODE XREF: ParticleList::AgeParticles((float))+25↑j
-//                pop     ebp
-//                mov     [edx], eax
-//                pop     ebx
-//                add     esp, 10h
-//                retn    4
-//    }
-//}
-
-// TODO - Move this to its corresponding class
 void ParticleList::AgeParticles(float dt)
 {
     size_t aliveCount = 0;
@@ -3287,6 +3021,10 @@ void InitConfig()
             bContrails = std::stol(ini["MAIN"]["Contrails"]) != 0;
         if (ini["MAIN"].has("UseCGStyle"))
             bUseCGStyle = std::stol(ini["MAIN"]["UseCGStyle"]) != 0;
+        if (ini["MAIN"].has("BounceParticles"))
+            bBounceParticles = std::stol(ini["MAIN"]["BounceParticles"]) != 0;
+        if (ini["MAIN"].has("CarbonBounceBehavior"))
+            bCarbonBounceBehavior = std::stol(ini["MAIN"]["CarbonBounceBehavior"]) != 0;
         if (ini["MAIN"].has("NISContrails"))
             bNISContrails = std::stol(ini["MAIN"]["NISContrails"]) != 0;
         if (ini["MAIN"].has("PassShadowMap"))
