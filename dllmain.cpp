@@ -59,6 +59,63 @@ struct bVector3
     float x;
     float y;
     float z;
+
+    inline bVector3& operator=(const bVector3& b)
+    {
+        this->x = b.x;
+        this->y = b.y;
+        this->z = b.z;
+
+        return *this;
+    }
+
+    inline bVector3 &operator*(const bVector3& b)
+    {
+        this->x *= b.x;
+        this->y *= b.y;
+        this->z *= b.z;
+        return *this;
+    }
+
+    inline bVector3 &operator*=(const bVector3& b)
+    {
+        this->x *= b.x;
+        this->y *= b.y;
+        this->z *= b.z;
+        return *this;
+    }
+
+    inline bVector3 &operator*(const float& f)
+    {
+        this->x *= f;
+        this->y *= f;
+        this->z *= f;
+        return *this;
+    }
+
+    inline bVector3 &operator*=(const float& f)
+    {
+        this->x *= f;
+        this->y *= f;
+        this->z *= f;
+        return *this;
+    }
+
+    inline bVector3 &operator/(const float& f)
+    {
+        this->x /= f;
+        this->y /= f;
+        this->z /= f;
+        return *this;
+    }
+
+    inline bVector3 &operator/=(const float& f)
+    {
+        this->x /= f;
+        this->y /= f;
+        this->z /= f;
+        return *this;
+    }
 };
 
 struct bVector4
@@ -67,6 +124,16 @@ struct bVector4
     float y;
     float z;
     float w;
+
+    inline bVector4& operator=(const bVector4& b)
+    {
+        this->x = b.x;
+        this->y = b.y;
+        this->z = b.z;
+        this->w = b.w;
+
+        return *this;
+    }
 };
 
 struct bMatrix4
@@ -75,6 +142,175 @@ struct bMatrix4
     bVector4 v1;
     bVector4 v2;
     bVector4 v3;
+
+    inline bMatrix4 operator=(const bMatrix4& b)
+    {
+        this->v0 = b.v0;
+        this->v1 = b.v1;
+        this->v2 = b.v2;
+        this->v3 = b.v3;
+    }
+};
+
+namespace UMath
+{
+    //struct Vector4
+    //{
+    //    float x;
+    //    float y;
+    //    float z;
+    //    float w;
+    //};
+    //
+    //struct Matrix4
+    //{
+    //    Vector4 v0;
+    //    Vector4 v1;
+    //    Vector4 v2;
+    //    Vector4 v3;
+    //};
+    typedef bVector3 Vector3;
+    typedef bVector4 Vector4;
+    typedef bMatrix4 Matrix4;
+
+    inline float Dot(const Vector3& a, const Vector3& b)
+    {
+        return (a.x * b.x) + (a.y * b.y) + (a.z * b.z);
+    }
+
+    inline float Dot(const Vector4& a, const Vector4& b)
+    {
+        return (a.x * b.x) + (a.y * b.y) + (a.z * b.z) + (a.w * b.w);
+    }
+
+    inline float Dotxyz(const Vector4& a, const Vector4& b)
+    {
+        return (a.x * b.x) + (a.y * b.y) + (a.z * b.z);
+    }
+
+    inline void Lerp(const UMath::Vector3& a, const UMath::Vector3& b, float t, UMath::Vector3& r)
+    {
+        r.x = ((b.x - a.x) * t) + a.x;
+        r.y = ((b.y - a.y) * t) + a.y;
+        r.z = ((b.z - a.z) * t) + a.z;
+    }
+
+    inline void Lerp(const UMath::Vector4& a, const UMath::Vector4& b, float t, UMath::Vector4& r)
+    {
+        r.x = ((b.x - a.x) * t) + a.x;
+        r.y = ((b.y - a.y) * t) + a.y;
+        r.z = ((b.z - a.z) * t) + a.z;
+        r.w = ((b.w - a.w) * t) + a.w;
+    }
+
+    inline float Lerp(float a, float b, float t)
+    {
+        return (((b - a) * t) + a);
+    }
+
+    inline float Length(const UMath::Vector3& a)
+    {
+        return sqrt(((a.z * a.z) + ((a.x * a.x) + (a.y * a.y))));
+    }
+
+    inline Vector3 Normalize(const Vector3& a)
+    {
+        float length = Length(a);
+
+        Vector3 out = a;
+
+        if (length != 0.0f)
+        {
+            out /= length;
+        }
+
+        return out;
+    }
+}
+
+
+class bNode {
+    void* Prev;
+    void* Next;
+};
+
+template <class T> class bTNode : bNode {};
+
+struct RenderState {
+    uint32_t _bf_0;
+};
+
+class TextureInfoPlatInfo : public bTNode<TextureInfoPlatInfo> {
+public:
+    RenderState mRenderState;
+    uint32_t type;
+
+private:
+    uint16_t Pad0;
+
+public:
+    uint16_t PunchThruValue;
+    uint32_t format;
+    LPDIRECT3DBASETEXTURE9 pD3DTexture;
+    void* pActiveBucket;
+};
+
+class TextureInfoPlatInterface {
+public:
+    TextureInfoPlatInfo* PlatInfo;
+};
+
+class TextureInfo : public TextureInfoPlatInterface, public bTNode<TextureInfo> {
+public:
+    char DebugName[24];
+    uint32_t NameHash;
+    uint32_t ClassNameHash;
+
+private:
+    uint32_t Padding0;
+
+public:
+    uint32_t ImagePlacement;
+    uint32_t PalettePlacement;
+    uint32_t ImageSize;
+    uint32_t PaletteSize;
+    uint32_t BaseImageSize;
+    uint16_t Width;
+    uint16_t Height;
+    uint8_t ShiftWidth;
+    uint8_t ShiftHeight;
+    uint8_t ImageCompressionType;
+    uint8_t PaletteCompressionType;
+    uint16_t NumPaletteEntries;
+    uint8_t NumMipMapLevels;
+    uint8_t TilableUV;
+    uint8_t BiasLevel;
+    uint8_t RenderingOrder;
+    uint8_t ScrollType;
+    uint8_t UsedFlag;
+    uint8_t ApplyAlphaSorting;
+    uint8_t AlphaUsageType;
+    uint8_t AlphaBlendType;
+    uint8_t Flags;
+    uint8_t MipmapBiasType;
+
+private:
+    uint8_t Padding1;
+
+public:
+    uint16_t ScrollTimeStep;
+    uint16_t ScrollSpeedS;
+    uint16_t ScrollSpeedT;
+    uint16_t OffsetS;
+    uint16_t OffsetT;
+    uint16_t ScaleS;
+    uint16_t ScaleT;
+    void* pTexturePack;
+    void* ImageData;
+    void* PaletteData;
+
+private:
+    uint32_t Padding2[2];
 };
 
 void*(__thiscall* FastMem_Alloc)(void* FastMem, unsigned int bytes, char* kind) = (void*(__thiscall*)(void*, unsigned int, char*))0x005D29D0;
@@ -93,7 +329,7 @@ void* (__cdecl* Attrib_FindCollection)(uint32_t param1, uint32_t param2) = (void
 float (__cdecl* bRandom_Float_Int)(float range, int unk) = (float (__cdecl*)(float, int))0x0045D9E0;
 int(__cdecl* bRandom_Int_Int)(int range, uint32_t* unk) = (int(__cdecl*)(int, uint32_t*))0x0045D9A0;
 unsigned int(__cdecl* bStringHash)(char* str) = (unsigned int(__cdecl*)(char*))0x00460BF0;
-void*(__cdecl* GetTextureInfo)(unsigned int name_hash, int return_default_texture_if_not_found, int include_unloaded_textures) = (void*(__cdecl*)(unsigned int, int, int))0x00503400;
+TextureInfo*(__cdecl* GetTextureInfo)(unsigned int name_hash, int return_default_texture_if_not_found, int include_unloaded_textures) = (TextureInfo*(__cdecl*)(unsigned int, int, int))0x00503400;
 void (__thiscall* EmitterSystem_UpdateParticles)(void* EmitterSystem, float dt) = (void (__thiscall*)(void*, float))0x00508C30;
 void(__thiscall* EmitterSystem_Render)(void* EmitterSystem, void* eView) = (void(__thiscall*)(void*, void*))0x00503D00;
 void(__stdcall* sub_7286D0)() = (void(__stdcall*)())0x007286D0;
@@ -193,9 +429,9 @@ public:
 
     enum Flags : uint8_t
     {
-        DEBRIS = 0x1,
-        SPAWN = 0x2,
-        BOUNCED = 0x4,
+        DEBRIS = 1 << 0,
+        SPAWN = 1 << 1,
+        BOUNCED = 1 << 2,
     };
 
     struct bVector3 initialPos;
@@ -218,6 +454,16 @@ public:
     unsigned char startZ;
     unsigned char uv[4];
 };
+
+inline constexpr NGParticle::Flags operator|(NGParticle::Flags a, NGParticle::Flags b)
+{
+    return static_cast<NGParticle::Flags>(static_cast<int>(a) | static_cast<int>(b));
+}
+
+inline constexpr NGParticle::Flags operator&(NGParticle::Flags a, NGParticle::Flags b)
+{
+    return static_cast<NGParticle::Flags>(static_cast<int>(a) & static_cast<int>(b));
+}
 
 class ParticleList
 {
@@ -291,22 +537,49 @@ public:
     Attrib::Gen::fuelcell_effect mEffectDef;
 };
 
-struct SpriteManager
-{
-    IDirect3DVertexBuffer9* vertex_buffer;
-    IDirect3DIndexBuffer9* index_buffer;
-    uint32_t unk1;
-    uint32_t unk2;
-    uint32_t vert_count;
-    void* mTexture;
-};
-
 struct eView
 {
     void* PlatInfo;
     uint32_t EVIEW_ID;
 };
 
+template <typename T, typename U>
+struct SpriteBuffer
+{
+    IDirect3DVertexBuffer9* vertex_buffer;
+    IDirect3DIndexBuffer9* index_buffer;
+};
+
+struct XSparkVert
+{
+    UMath::Vector3 position;
+    unsigned int color;
+    float texcoord[2];
+};
+
+struct XSpark
+{
+    XSparkVert v[4];
+};
+
+template <typename Sprite, typename SpriteVert, int BufferCount>
+struct XSpriteList
+{
+    SpriteBuffer<Sprite, SpriteVert> mSprintListView[BufferCount];
+    int mNumViews;
+    int mCurrViewBuffer;
+    unsigned int mMaxSprites;
+    TextureInfo* mTexture;
+};
+
+class __declspec(align(4)) XSpriteManager
+{
+public:
+    XSpriteList<XSpark, XSparkVert, 1> sparkList;
+    void* debris;
+    bool bBatching;
+    void DrawBatch(eView* view);
+};
 
 float flt_9C92F0 = 255.0f;
 float flt_9C2478 = 1.0f;
@@ -383,7 +656,7 @@ vector<ElasticityPair> elasticityValues;
 
 float GetElasticityValue(uint32_t key)
 {
-    for (int i = 0; i < elasticityValues.size(); i++)
+    for (size_t i = 0; i < elasticityValues.size(); i++)
     {
         if (elasticityValues.at(i).emmitter_key == key)
             return elasticityValues.at(i).Elasticity;
@@ -391,8 +664,11 @@ float GetElasticityValue(uint32_t key)
     return 0.0f;
 }
 
-char NGSpriteManager_ClassData[128];
-uint32_t NGSpriteManager[32] = { (uint32_t)(&NGSpriteManager_ClassData), 0};
+//char NGSpriteManager_ClassData[128];
+
+XSpriteManager NGSpriteManager;
+
+uint32_t NGSpriteManager_thing[32] = { (uint32_t)(&NGSpriteManager), 0};
 
 float GetTargetFrametime()
 {
@@ -838,27 +1114,6 @@ void __stdcall XenonEffectList_Initialize()
 
 // note: unk_9D7880 == unk_8A3028
 
-namespace UMath
-{
-    //struct Vector4
-    //{
-    //    float x;
-    //    float y;
-    //    float z;
-    //    float w;
-    //};
-    //
-    //struct Matrix4
-    //{
-    //    Vector4 v0;
-    //    Vector4 v1;
-    //    Vector4 v2;
-    //    Vector4 v3;
-    //};
-    typedef bVector4 Vector4;
-    typedef bMatrix4 Matrix4;
-}
-
 /*void __declspec(naked) AddXenonEffect() // (AcidEffect *piggyback_fx, Attrib::Collection *spec, UMath::Matrix4 *mat, UMath::Vector4 *vel, float intensity)
 {
 	_asm
@@ -983,7 +1238,7 @@ void __cdecl AddXenonEffect(
 
 //void(__cdecl* AddXenonEffect_Abstract)(void* piggyback_fx, void* spec, bMatrix4* mat, bVector4* vel, float intensity) = (void(__cdecl*)(void*, void*, bMatrix4*, bVector4*, float)) & AddXenonEffect;
 
-void __declspec(naked) CalcCollisiontime()
+void __declspec(naked) CalcCollisiontime(NGParticle* particle)
 {
     _asm
     {
@@ -1121,124 +1376,181 @@ void __declspec(naked) CalcCollisiontime()
     }
 }
 
-bool __declspec(naked) BounceParticle(NGParticle* particle)
+void(*CalcCollisiontime_Abstract)(NGParticle* particle) = (void(*)(NGParticle*))&CalcCollisiontime;
+
+//bool __declspec(naked) BounceParticle(NGParticle* particle)
+//{
+//    _asm
+//    {
+//                sub     esp, 18h
+//                push    esi
+//                mov     esi, [esp+20h]
+//                fld     dword ptr [esi+30h]
+//                push    edi
+//                fld     st
+//                lea     edi, [esi+10h]
+//                fmul    dword ptr [edi]
+//                mov     eax, esi
+//                fadd    dword ptr [esi]
+//                fstp    dword ptr [esp+14h]
+//                mov     ecx, [esp+14h]
+//                fld     st
+//                fmul    dword ptr [edi+4]
+//                fadd    dword ptr [esi+4]
+//                fstp    dword ptr [esp+18h]
+//                mov     edx, [esp+18h]
+//                fld     st
+//                fmul    dword ptr [esi+1Ch]
+//                fld     st(1)
+//                fmul    dword ptr [edi+8]
+//                fadd    dword ptr [esi+8]
+//                fld     st(1)
+//                mov     [eax], ecx
+//                fmul    st, st(3)
+//                mov     [eax+4], edx
+//                mov     edx, edi
+//                faddp   st(1), st
+//                fstp    dword ptr [esp+1Ch]
+//                mov     ecx, [esp+1Ch]
+//                mov     [eax+8], ecx
+//                mov     eax, [edx]
+//                fadd    st, st
+//                mov     ecx, [edx+4]
+//                mov     edx, [edx+8]
+//                mov     [esp+1Ch], edx
+//                fadd    dword ptr [esp+1Ch]
+//                mov     [esp+0Ch], ecx
+//                mov     [esp+8], eax
+//                fstp    dword ptr [esp+1Ch]
+//                mov     eax, [esp+1Ch]
+//                lea     ecx, [esp+8]
+//                push    ecx             ; float
+//                fstp    st
+//                mov     [esp+14h], eax
+//                call    rsqrt
+//                fld     dword ptr [esp+14h]
+//                fmul    dword ptr [esi+28h]
+//                movzx   edx, byte ptr [esi+38h]
+//                fld     dword ptr [esp+10h]
+//                fmul    dword ptr [esi+24h]
+//                faddp   st(1), st
+//                fld     dword ptr [esp+0Ch]
+//                fmul    dword ptr [esi+20h]
+//                faddp   st(1), st
+//                fadd    st, st
+//                fld     st
+//                fmul    dword ptr [esi+20h]
+//                fld     st(1)
+//                fmul    dword ptr [esi+24h]
+//                fstp    dword ptr [esp+1Ch]
+//                fxch    st(1)
+//                fmul    dword ptr [esi+28h]
+//                fstp    dword ptr [esp+20h]
+//                fld     dword ptr [esp+0Ch]
+//                fsub    st, st(1)
+//                fstp    dword ptr [esp+18h]
+//                fstp    st
+//                fld     dword ptr [esp+10h]
+//                fsub    dword ptr [esp+1Ch]
+//                fstp    dword ptr [esp+1Ch]
+//                fld     dword ptr [esp+14h]
+//                fsub    dword ptr [esp+20h]
+//                fstp    dword ptr [esp+20h]
+//                mov     [esp+28h], edx
+//                fimul   dword ptr [esp+28h]
+//                push    esi
+//                mov     dword ptr [esi+34h], 0
+//                fmul    ds:flt_9C77C8
+//                fld     dword ptr [esp+1Ch]
+//                fmul    st, st(1)
+//                fld     dword ptr [esp+20h]
+//                fmul    st, st(2)
+//                fld     dword ptr [esp+24h]
+//                fmul    st, st(3)
+//                fstp    dword ptr [esp+18h]
+//                mov     eax, [esp+18h]
+//                fxch    st(1)
+//                mov     [esp+24h], eax
+//                fstp    dword ptr [esp+1Ch]
+//                mov     ecx, [esp+1Ch]
+//                mov     [edi], ecx
+//                mov     cl, [esi+3Ch]
+//                fstp    dword ptr [esp+20h]
+//                mov     edx, [esp+20h]
+//                mov     [edi+4], edx
+//                fstp    st
+//                mov     edx, [esi+2Ch]
+//                and     cl, 1
+//                or      cl, 4
+//                mov     [edi+8], eax
+//                mov     [esi+3Ch], cl
+//                mov     [esi+30h], edx
+//                call    CalcCollisiontime
+//                add     esp, 8
+//                pop     edi
+//                mov     al, 1
+//                pop     esi
+//                add     esp, 18h
+//                retn
+//    }
+//}
+
+bool __cdecl BounceParticle(NGParticle* particle)
 {
-    _asm
-    {
-                sub     esp, 18h
-                push    esi
-                mov     esi, [esp+20h]
-                fld     dword ptr [esi+30h]
-                push    edi
-                fld     st
-                lea     edi, [esi+10h]
-                fmul    dword ptr [edi]
-                mov     eax, esi
-                fadd    dword ptr [esi]
-                fstp    dword ptr [esp+14h]
-                mov     ecx, [esp+14h]
-                fld     st
-                fmul    dword ptr [edi+4]
-                fadd    dword ptr [esi+4]
-                fstp    dword ptr [esp+18h]
-                mov     edx, [esp+18h]
-                fld     st
-                fmul    dword ptr [esi+1Ch]
-                fld     st(1)
-                fmul    dword ptr [edi+8]
-                fadd    dword ptr [esi+8]
-                fld     st(1)
-                mov     [eax], ecx
-                fmul    st, st(3)
-                mov     [eax+4], edx
-                mov     edx, edi
-                faddp   st(1), st
-                fstp    dword ptr [esp+1Ch]
-                mov     ecx, [esp+1Ch]
-                mov     [eax+8], ecx
-                mov     eax, [edx]
-                fadd    st, st
-                mov     ecx, [edx+4]
-                mov     edx, [edx+8]
-                mov     [esp+1Ch], edx
-                fadd    dword ptr [esp+1Ch]
-                mov     [esp+0Ch], ecx
-                mov     [esp+8], eax
-                fstp    dword ptr [esp+1Ch]
-                mov     eax, [esp+1Ch]
-                lea     ecx, [esp+8]
-                push    ecx             ; float
-                fstp    st
-                mov     [esp+14h], eax
-                call    rsqrt
-                fld     dword ptr [esp+14h]
-                fmul    dword ptr [esi+28h]
-                movzx   edx, byte ptr [esi+38h]
-                fld     dword ptr [esp+10h]
-                fmul    dword ptr [esi+24h]
-                faddp   st(1), st
-                fld     dword ptr [esp+0Ch]
-                fmul    dword ptr [esi+20h]
-                faddp   st(1), st
-                fadd    st, st
-                fld     st
-                fmul    dword ptr [esi+20h]
-                fld     st(1)
-                fmul    dword ptr [esi+24h]
-                fstp    dword ptr [esp+1Ch]
-                fxch    st(1)
-                fmul    dword ptr [esi+28h]
-                fstp    dword ptr [esp+20h]
-                fld     dword ptr [esp+0Ch]
-                fsub    st, st(1)
-                fstp    dword ptr [esp+18h]
-                fstp    st
-                fld     dword ptr [esp+10h]
-                fsub    dword ptr [esp+1Ch]
-                fstp    dword ptr [esp+1Ch]
-                fld     dword ptr [esp+14h]
-                fsub    dword ptr [esp+20h]
-                fstp    dword ptr [esp+20h]
-                mov     [esp+28h], edx
-                fimul   dword ptr [esp+28h]
-                push    esi
-                mov     dword ptr [esi+34h], 0
-                fmul    ds:flt_9C77C8
-                fld     dword ptr [esp+1Ch]
-                fmul    st, st(1)
-                fld     dword ptr [esp+20h]
-                fmul    st, st(2)
-                fld     dword ptr [esp+24h]
-                fmul    st, st(3)
-                fstp    dword ptr [esp+18h]
-                mov     eax, [esp+18h]
-                fxch    st(1)
-                mov     [esp+24h], eax
-                fstp    dword ptr [esp+1Ch]
-                mov     ecx, [esp+1Ch]
-                mov     [edi], ecx
-                mov     cl, [esi+3Ch]
-                fstp    dword ptr [esp+20h]
-                mov     edx, [esp+20h]
-                mov     [edi+4], edx
-                fstp    st
-                mov     edx, [esi+2Ch]
-                and     cl, 1
-                or      cl, 4
-                mov     [edi+8], eax
-                mov     [esi+3Ch], cl
-                mov     [esi+30h], edx
-                call    CalcCollisiontime
-                add     esp, 8
-                pop     edi
-                mov     al, 1
-                pop     esi
-                add     esp, 18h
-                retn
-    }
+    float life; // fp0
+    float gravity; // fp11
+    //float velocityZ; // r8
+    float gravityOverTime; // fp13
+    float offset; // fp10
+    float velocityMagnitude; // fp0
+    unsigned char elasticity; // r10
+    NGParticle::Flags flags;
+    //float velocityX; // [sp+50h] [-40h]
+    //float velocityZGravity; // [sp+58h] [-38h]
+    //float velocityY; // [sp+64h] [-2Ch]
+    UMath::Vector3 newVelocity;
+
+    life = particle->life;
+    gravity = particle->gravity;
+
+    newVelocity.x = particle->vel.x;
+    newVelocity.y = particle->vel.y;
+    newVelocity.z = particle->vel.z;
+
+    gravityOverTime = (particle->gravity * particle->life);
+    offset = ((newVelocity.z * particle->life) + particle->initialPos.z);
+    particle->initialPos.x = (newVelocity.x * particle->life) + particle->initialPos.x;
+    
+    newVelocity.z = ((gravity * life) * 2.0f) + newVelocity.z;
+    particle->initialPos.y = (newVelocity.y * particle->life) + particle->initialPos.y;
+    particle->initialPos.z = (gravityOverTime * life) + offset;
+    
+    velocityMagnitude = UMath::Length(newVelocity);
+
+    newVelocity = UMath::Normalize(newVelocity);
+
+    elasticity = particle->elasticity;
+    flags = particle->flags;
+    particle->life = particle->remainingLife;
+    particle->age = 0.0;
+    particle->flags = flags & NGParticle::Flags::DEBRIS | NGParticle::Flags::BOUNCED;
+    
+    float bounceCos = UMath::Dot(newVelocity, particle->impactNormal);
+
+    // carbon modifications
+    //velocityMagnitude *= elasticity / 255.0f;
+    //bounceCos *= 2.0f;
+
+    particle->vel.x = (newVelocity.x - (particle->impactNormal.x * bounceCos)) * velocityMagnitude;
+    particle->vel.y = (newVelocity.y - (particle->impactNormal.y * bounceCos)) * velocityMagnitude;
+    particle->vel.z = (newVelocity.z - (particle->impactNormal.z * bounceCos)) * velocityMagnitude;
+    
+    CalcCollisiontime_Abstract(particle);
+
+    return true;
 }
 
-bool (*BounceParticle_Abstract)(NGParticle* particle) = &BounceParticle;
+//bool (*BounceParticle_Abstract)(NGParticle* particle) = &BounceParticle;
 
 //void __declspec(naked) ParticleList_AgeParticles()
 //{
@@ -1346,7 +1658,7 @@ void ParticleList::AgeParticles(float dt)
         else if (particle.flags & NGParticle::Flags::SPAWN)
         {
             particle.remainingLife -= particle.age + dt;
-            if (particle.remainingLife > dt && BounceParticle_Abstract(&particle))
+            if (particle.remainingLife > dt && BounceParticle(&particle))
             {
                 aliveCount++;
             }
@@ -2442,7 +2754,7 @@ void DrawXenonEmitters(eView *view)
     EmitterDeltaTime = 0.0f;
     eastl_vector_erase_XenonEffectDef_Abstract(&gNGEffectList, gNGEffectList.mpBegin, gNGEffectList.mpEnd);
     if (gParticleList.mNumParticles)
-        XSpriteManager_AddParticle_Abstract(NGSpriteManager, view, gParticleList.mParticles, gParticleList.mNumParticles);
+        XSpriteManager_AddParticle_Abstract(NGSpriteManager_thing, view, gParticleList.mParticles, gParticleList.mNumParticles);
 }
 
 // RENDERER STUFF START
@@ -2562,7 +2874,7 @@ void __declspec(naked) InitializeRenderObj()
         push    ecx
         lea     eax, [esp]
         push    eax
-        mov     ecx, offset NGSpriteManager_ClassData
+        mov     ecx, offset NGSpriteManager
         mov eax, MaxParticles
         mov     dword ptr[esp + 4], eax
         call    sub_743DF0
@@ -2573,7 +2885,7 @@ void __declspec(naked) InitializeRenderObj()
         add     esp, 4
         push    eax
         call    GetTextureInfo
-        mov     ecx, offset NGSpriteManager_ClassData
+        mov     ecx, offset NGSpriteManager
         add     ecx, 0x14
         mov     [ecx], eax
         mov ecx, ds:[GLOBAL_D3DDEVICE]
@@ -2584,19 +2896,29 @@ void __declspec(naked) InitializeRenderObj()
     }
 }
 
+//void __cdecl InitializeRenderObj()
+//{
+//    unsigned int v0; // eax
+//
+//    sub_743DF0();
+//    v0 = bStringHash((char*)TextureName);
+//    *(TextureInfo**)&NGSpriteManager_ClassData[20] = GetTextureInfo(v0, 0, 0);
+//    g_D3DDevice = *(LPDIRECT3DDEVICE9*)GLOBAL_D3DDEVICE;
+//}
+
 void __stdcall ReleaseRenderObj()
 {
-    SpriteManager* sm = (SpriteManager*)NGSpriteManager_ClassData;
+    //SpriteManager* sm = (SpriteManager*)NGSpriteManager_ClassData;
 
-    if (sm->vertex_buffer)
-        sm->vertex_buffer->Release();
-    if (sm->index_buffer)
-        sm->index_buffer->Release();
+    if (NGSpriteManager.sparkList.mSprintListView[0].vertex_buffer)
+        NGSpriteManager.sparkList.mSprintListView[0].vertex_buffer->Release();
+    if (NGSpriteManager.sparkList.mSprintListView[0].vertex_buffer)
+        NGSpriteManager.sparkList.mSprintListView[0].vertex_buffer->Release();
 }
 
-void __stdcall XSpriteManager_DrawBatch(eView* view)
+void XSpriteManager::DrawBatch(eView* view)
 {
-    SpriteManager* sm = (SpriteManager*)NGSpriteManager_ClassData;
+    //SpriteManager* sm = (SpriteManager*)NGSpriteManager_ClassData;
     // init shader stuff here...
     uint32_t CurrentShaderObj = CURRENTSHADER_OBJ_ADDR;
     if (!bPassShadowMap)
@@ -2608,16 +2930,16 @@ void __stdcall XSpriteManager_DrawBatch(eView* view)
     effect->BeginPass(0);
 
     g_D3DDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
-    if (sm->vert_count && gParticleList.mNumParticles)
+    if (sparkList.mMaxSprites && gParticleList.mNumParticles)
     {
-        g_D3DDevice->SetStreamSource(0, sm->vertex_buffer, 0, 0x18);
-        g_D3DDevice->SetIndices(sm->index_buffer);
+        g_D3DDevice->SetStreamSource(0, sparkList.mSprintListView[0].vertex_buffer, 0, 0x18);
+        g_D3DDevice->SetIndices(sparkList.mSprintListView[0].index_buffer);
 
-        if (sm->mTexture)
+        if (sparkList.mTexture)
         {
             if (bUseD3DDeviceTexture)
             {
-                LPDIRECT3DTEXTURE9 texMain = *(LPDIRECT3DTEXTURE9*)(*(uint32_t*)(sm->mTexture) + 0x18);
+                LPDIRECT3DBASETEXTURE9 texMain = sparkList.mTexture->PlatInfo->pD3DTexture;
                 g_D3DDevice->SetTexture(0, texMain);
                 g_D3DDevice->SetRenderState(D3DRS_ALPHAREF, (DWORD)0x000000B0);
                 g_D3DDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
@@ -2628,12 +2950,12 @@ void __stdcall XSpriteManager_DrawBatch(eView* view)
                 g_D3DDevice->SetRenderState(D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_RED | D3DCOLORWRITEENABLE_GREEN | D3DCOLORWRITEENABLE_BLUE);
             }
             else
-                GameSetTexture(sm->mTexture, 0);
+                GameSetTexture(sparkList.mTexture, 0);
         }
 
         effect->CommitChanges();
 
-        g_D3DDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, 4 * sm->vert_count, 0, 2 * sm->vert_count);
+        g_D3DDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, 4 * sparkList.mMaxSprites, 0, 2 * sparkList.mMaxSprites);
     }
     g_D3DDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
 
@@ -2650,7 +2972,7 @@ void __stdcall EmitterSystem_Render_Hook(eView* view)
     if (*(uint32_t*)GAMEFLOWSTATUS_ADDR == 6)
     {
         DrawXenonEmitters(view);
-        XSpriteManager_DrawBatch(view);
+        NGSpriteManager.DrawBatch(view);
     }
     //printf("VertexBuffer: 0x%X\n", vertex_buffer);
 }
@@ -2740,8 +3062,8 @@ void AddXenonEffect_Contrail_Hook(void* piggyback_fx, void* spec, bMatrix4* mat,
 
     if (!bUseCGStyle)
     {
-        double carspeed = ((sqrt((*vel).x * (*vel).x + (*vel).y * (*vel).y + (*vel).z * (*vel).z) - ContrailSpeed)) / ContrailSpeed;
-        newintensity = std::lerp(ContrailMinIntensity, ContrailMaxIntensity, carspeed);
+        float carspeed = ((sqrtf((*vel).x * (*vel).x + (*vel).y * (*vel).y + (*vel).z * (*vel).z) - ContrailSpeed)) / ContrailSpeed;
+        newintensity = UMath::Lerp(ContrailMinIntensity, ContrailMaxIntensity, carspeed);
         if (newintensity > ContrailMaxIntensity)
             newintensity = ContrailMaxIntensity;
     }
@@ -2873,7 +3195,7 @@ loc_7E1346:                             ; CODE XREF: sub_7E1160+169↑j
                 push    eax
                 push    ecx
 
-loc_7E1397:                             ; CODE XREF: sub_7E1160+1DD↑j
+//loc_7E1397:                             ; CODE XREF: sub_7E1160+1DD↑j
                 push    esi
                 push    0
                 call    AddXenonEffect_Contrail_Hook ; AddXenonEffect(AcidEffect *,Attrib::Collection const *,UMath::Matrix4 const *,UMath::Vector4 const *,float)
@@ -2934,7 +3256,7 @@ void __stdcall CarRenderConn_UpdateEngineAnimation_Hook(float param, void* PktCa
 
 bool bValidateHexString(char* str)
 {
-    for (int i = 0; i < strlen(str); i++)
+    for (size_t i = 0; i < strlen(str); i++)
     {
         if ((!isdigit(str[i])) &&
             (toupper(str[i]) != 'A') &&
@@ -3047,7 +3369,7 @@ void InitConfig()
         bool bSet_emsprk_line1 = false;
         bool bSet_emsprk_line2 = false;
 
-        for (int i = 0; i < elasticityValues.size(); i++)
+        for (size_t i = 0; i < elasticityValues.size(); i++)
         {
             if (elasticityValues.at(i).emmitter_key == 0xF872A5B4)
                 bSet_emsprk_line1 = true;
