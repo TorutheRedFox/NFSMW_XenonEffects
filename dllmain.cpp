@@ -1396,7 +1396,7 @@ bool __cdecl BounceParticle(NGParticle* particle)
     if (bCarbonBounceBehavior)
         particle->life = particle->remainingLife;
     else
-        particle->life = 1.0f;
+        particle->life = 1.0f; // should be 8191
     particle->age = 0.0f;
     particle->flags = particle->flags & NGParticle::Flags::DEBRIS | NGParticle::Flags::BOUNCED;
     
