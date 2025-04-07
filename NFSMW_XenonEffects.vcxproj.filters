@@ -3,10 +3,19 @@
   <ItemGroup>
     <ClCompile Include="dllmain.cpp" />
     <ClCompile Include="stdafx.cpp" />
+    <ClCompile Include="Attrib\Attrib.cpp">
+      <Filter>Attrib</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="UMath\UMath.h">
+      <Filter>UMath</Filter>
+    </ClInclude>
+    <ClInclude Include="Attrib\Attrib.h">
+      <Filter>Attrib</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="NFSMW_XenonEffects.ini" />
@@ -27,6 +36,12 @@
     </Filter>
     <Filter Include="Texture">
       <UniqueIdentifier>{2d0a3c87-2425-4873-90e5-2ae297a3b6e4}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Attrib">
+      <UniqueIdentifier>{d2769e8e-1e3d-4be0-9ec7-87ff87a51cb6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="UMath">
+      <UniqueIdentifier>{e1341417-c79a-4863-a372-f573a4360f20}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

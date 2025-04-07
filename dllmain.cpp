@@ -17,6 +17,8 @@
 #include <d3dx9.h>
 #include <cmath>
 #include <vector>
+#include <UMath/UMath.h>
+#include <Attrib/Attrib.h>
 using namespace std;
 
 #pragma runtime_checks( "", off )
@@ -55,213 +57,6 @@ uint32_t SparkFrameDelay = 1;
 
 #define FRAMECOUNTER_ADDR 0x00982B78
 #define eFrameCounter *(uint32_t*)FRAMECOUNTER_ADDR
-
-struct bVector3
-{
-    float x;
-    float y;
-    float z;
-
-    inline bVector3& operator=(const bVector3& b)
-    {
-        this->x = b.x;
-        this->y = b.y;
-        this->z = b.z;
-
-        return *this;
-    }
-
-    inline bVector3 &operator*(const bVector3& b)
-    {
-        this->x *= b.x;
-        this->y *= b.y;
-        this->z *= b.z;
-        return *this;
-    }
-
-    inline bVector3& operator+(const bVector3& b)
-    {
-        this->x += b.x;
-        this->y += b.y;
-        this->z += b.z;
-        return *this;
-    }
-
-    inline bVector3& operator+=(const bVector3& b)
-    {
-        this->x += b.x;
-        this->y += b.y;
-        this->z += b.z;
-        return *this;
-    }
-
-    inline bVector3& operator-(const bVector3& b)
-    {
-        this->x -= b.x;
-        this->y -= b.y;
-        this->z -= b.z;
-        return *this;
-    }
-
-    inline bVector3& operator-=(const bVector3& b)
-    {
-        this->x -= b.x;
-        this->y -= b.y;
-        this->z -= b.z;
-        return *this;
-    }
-
-    inline bVector3 &operator*=(const bVector3& b)
-    {
-        this->x *= b.x;
-        this->y *= b.y;
-        this->z *= b.z;
-        return *this;
-    }
-
-    inline bVector3 &operator*(const float& f)
-    {
-        this->x *= f;
-        this->y *= f;
-        this->z *= f;
-        return *this;
-    }
-
-    inline bVector3 &operator*=(const float& f)
-    {
-        this->x *= f;
-        this->y *= f;
-        this->z *= f;
-        return *this;
-    }
-
-    inline bVector3 &operator/(const float& f)
-    {
-        this->x /= f;
-        this->y /= f;
-        this->z /= f;
-        return *this;
-    }
-
-    inline bVector3 &operator/=(const float& f)
-    {
-        this->x /= f;
-        this->y /= f;
-        this->z /= f;
-        return *this;
-    }
-};
-
-struct bVector4
-{
-    float x;
-    float y;
-    float z;
-    float w;
-
-    inline bVector4& operator=(const bVector4& b)
-    {
-        this->x = b.x;
-        this->y = b.y;
-        this->z = b.z;
-        this->w = b.w;
-
-        return *this;
-    }
-};
-
-struct bMatrix4
-{
-    bVector4 v0;
-    bVector4 v1;
-    bVector4 v2;
-    bVector4 v3;
-
-    inline bMatrix4 operator=(const bMatrix4& b)
-    {
-        this->v0 = b.v0;
-        this->v1 = b.v1;
-        this->v2 = b.v2;
-        this->v3 = b.v3;
-    }
-};
-
-namespace UMath
-{
-    //struct Vector4
-    //{
-    //    float x;
-    //    float y;
-    //    float z;
-    //    float w;
-    //};
-    //
-    //struct Matrix4
-    //{
-    //    Vector4 v0;
-    //    Vector4 v1;
-    //    Vector4 v2;
-    //    Vector4 v3;
-    //};
-    typedef bVector3 Vector3;
-    typedef bVector4 Vector4;
-    typedef bMatrix4 Matrix4;
-
-    inline float Dot(const Vector3& a, const Vector3& b)
-    {
-        return (a.x * b.x) + (a.y * b.y) + (a.z * b.z);
-    }
-
-    inline float Dot(const Vector4& a, const Vector4& b)
-    {
-        return (a.x * b.x) + (a.y * b.y) + (a.z * b.z) + (a.w * b.w);
-    }
-
-    inline float Dotxyz(const Vector4& a, const Vector4& b)
-    {
-        return (a.x * b.x) + (a.y * b.y) + (a.z * b.z);
-    }
-
-    inline void Lerp(const UMath::Vector3& a, const UMath::Vector3& b, float t, UMath::Vector3& r)
-    {
-        r.x = ((b.x - a.x) * t) + a.x;
-        r.y = ((b.y - a.y) * t) + a.y;
-        r.z = ((b.z - a.z) * t) + a.z;
-    }
-
-    inline void Lerp(const UMath::Vector4& a, const UMath::Vector4& b, float t, UMath::Vector4& r)
-    {
-        r.x = ((b.x - a.x) * t) + a.x;
-        r.y = ((b.y - a.y) * t) + a.y;
-        r.z = ((b.z - a.z) * t) + a.z;
-        r.w = ((b.w - a.w) * t) + a.w;
-    }
-
-    inline float Lerp(float a, float b, float t)
-    {
-        return (((b - a) * t) + a);
-    }
-
-    inline float Length(const UMath::Vector3& a)
-    {
-        return sqrt(((a.z * a.z) + ((a.x * a.x) + (a.y * a.y))));
-    }
-
-    inline Vector3 Normalize(const Vector3& a)
-    {
-        float length = Length(a);
-
-        Vector3 out = a;
-
-        if (length != 0.0f)
-        {
-            out /= length;
-        }
-
-        return out;
-    }
-}
-
 
 class bNode {
     void* Prev;
@@ -372,7 +167,7 @@ void(__stdcall* sub_739600)() = (void(__stdcall*)())0x739600;
 void(__thiscall* CarRenderConn_UpdateEngineAnimation)(void* CarRenderConn, float param1, void* PktCarService) = (void(__thiscall*)(void*, float, void*))0x00745F20;
 void(__stdcall* sub_6CFCE0)() = (void(__stdcall*)())0x6CFCE0;
 void(__cdecl* ParticleSetTransform)(D3DXMATRIX* worldmatrix, uint32_t EVIEW_ID) = (void(__cdecl*)(D3DXMATRIX*, uint32_t))0x6C8000;
-bool(__thiscall* WCollisionMgr_CheckHitWorld)(void* WCollisionMgr, bMatrix4* inputSeg, void* cInfo, uint32_t primMask) = (bool(__thiscall*)(void*, bMatrix4*, void*, uint32_t))0x007854B0;
+bool(__thiscall* WCollisionMgr_CheckHitWorld)(void* WCollisionMgr, UMath::Matrix4* inputSeg, void* cInfo, uint32_t primMask) = (bool(__thiscall*)(void*, UMath::Matrix4*, void*, uint32_t))0x007854B0;
 void(__cdecl* GameSetTexture)(void* TextureInfo, uint32_t unk) = (void(__cdecl*)(void*, uint32_t))0x006C68B0;
 void* (*CreateResourceFile)(char* filename, int ResFileType, int unk1, int unk2, int unk3) = (void* (*)(char*, int, int, int, int))0x0065FD30;
 void(__thiscall* ResourceFile_BeginLoading)(void* ResourceFile, void* callback, void* unk) = (void(__thiscall*)(void*, void*, void*))0x006616F0;
@@ -405,9 +200,9 @@ unsigned int sub_6012B0 = 0x4FA510;
 
 struct XenonEffectDef
 {
-    float intensity;
-    bVector4 vel;
-    bMatrix4 mat;
+    float           intensity;
+    UMath::Vector4  vel;
+    UMath::Matrix4  mat;
     /*Attrib::Collection*/ void* spec;
     void* piggyback_effect;
 };
@@ -468,11 +263,11 @@ public:
         BOUNCED = 1 << 2,
     };
 
-    struct bVector3 initialPos;
+    struct UMath::Vector3 initialPos;
     unsigned int color;
-    struct bVector3 vel;
+    struct UMath::Vector3 vel;
     float gravity;
-    struct bVector3 impactNormal;
+    struct UMath::Vector3 impactNormal;
     float remainingLife;
     float life;
     float age;
@@ -512,50 +307,50 @@ ParticleList gParticleList;
 
 //#define numParticles dword ptr gParticleList[PARTICLELIST_SIZE]
 
-// TODO - replace this with proper Attrib bridge
+// TODO - replace this with proper Attrib bridge - TBD when fully decompiled
 namespace Attrib
 {
-    struct HashMap
-    {
-        void* mTable;
-        unsigned __int32 mTableSize;
-        unsigned __int32 mNumEntries;
-        unsigned __int16 mWorstCollision;
-        unsigned __int16 mKeyShift;
-    };
-
-    struct Collection
-    {
-        Attrib::HashMap mTable;
-        void* mParent;
-        void* mClass;
-        void* mLayout;
-        unsigned int mRefCount;
-        unsigned int mKey;
-        void* mSource;
-        const char* mNamePtr;
-    };
-
-    struct Instance
-    {
-        void* mOwner;
-        Attrib::Collection* mCollection;
-        void* mLayoutPtr;
-        unsigned int mMsgPort;
-        unsigned __int16 mFlags;
-        unsigned __int16 mLocks;
-    };
-
-    struct RefSpec
-    {
-        uint32_t mClassKey;
-        uint32_t mCollectionKey;
-        Attrib::Collection* mCollectionPtr;
-    };
-
     namespace Gen
     {
-        class fuelcell_effect : Attrib::Instance
+        struct HashMap
+        {
+            void* mTable;
+            unsigned __int32 mTableSize;
+            unsigned __int32 mNumEntries;
+            unsigned __int16 mWorstCollision;
+            unsigned __int16 mKeyShift;
+        };
+
+        struct Collection
+        {
+            Attrib::HashMap mTable;
+            void* mParent;
+            void* mClass;
+            void* mLayout;
+            unsigned int mRefCount;
+            unsigned int mKey;
+            void* mSource;
+            const char* mNamePtr;
+        };
+
+        struct CarbonInstance
+        {
+            void* mOwner;
+            Attrib::Collection* mCollection;
+            void* mLayoutPtr;
+            unsigned int mMsgPort;
+            unsigned __int16 mFlags;
+            unsigned __int16 mLocks;
+        };
+
+        struct RefSpec
+        {
+            uint32_t mClassKey;
+            uint32_t mCollectionKey;
+            Attrib::Collection* mCollectionPtr;
+        };
+
+        class fuelcell_effect : CarbonInstance
         {
         public:
             struct _LayoutStruct
@@ -564,7 +359,7 @@ namespace Attrib
             };
         };
 
-        class fuelcell_emitter : Attrib::Instance
+        class fuelcell_emitter : CarbonInstance
         {
         public:
             struct _LayoutStruct
@@ -591,7 +386,7 @@ namespace Attrib
             };
         };
 
-        class emitteruv : Attrib::Instance
+        class emitteruv : CarbonInstance
         {
         public:
             struct _LayoutStruct
@@ -604,12 +399,6 @@ namespace Attrib
         };
     }
 }
-
-class NGEffect
-{
-public:
-    Attrib::Gen::fuelcell_effect mEffectDef;
-};
 
 struct eView
 {
@@ -673,12 +462,12 @@ LPDIRECT3DDEVICE9 g_D3DDevice;
 
 struct fuelcell_emitter_mw
 {
-    bVector4 VolumeCenter;
-    bVector4 VelocityDelta;
-    bVector4 VolumeExtent;
-    bVector4 VelocityInherit;
-    bVector4 VelocityStart;
-    bVector4 Colour1;
+    UMath::Vector4 VolumeCenter;
+    UMath::Vector4 VelocityDelta;
+    UMath::Vector4 VolumeExtent;
+    UMath::Vector4 VelocityInherit;
+    UMath::Vector4 VelocityStart;
+    UMath::Vector4 Colour1;
     uint32_t emitteruv_classKey;
     uint32_t emitteruv_collectionKey;
     void* emitteruv_collection;
@@ -698,12 +487,12 @@ struct fuelcell_emitter_mw
 
 struct fuelcell_emitter_carbon
 {
-    bVector4 VolumeCenter;
-    bVector4 VelocityDelta;
-    bVector4 VolumeExtent;
-    bVector4 VelocityInherit;
-    bVector4 VelocityStart;
-    bVector4 Colour1;
+    UMath::Vector4 VolumeCenter;
+    UMath::Vector4 VelocityDelta;
+    UMath::Vector4 VolumeExtent;
+    UMath::Vector4 VelocityInherit;
+    UMath::Vector4 VelocityStart;
+    UMath::Vector4 Colour1;
     uint32_t emitteruv_classKey;
     uint32_t emitteruv_collectionKey;
     void* emitteruv_collection;
@@ -2358,15 +2147,17 @@ unsigned int __stdcall Attrib_Gen_fuelcell_effect_Num_NGEmitter()
     uint32_t that;
     _asm mov that, ecx
 
-    uint32_t v1; // eax
+    Attrib::Attribute* v1; // eax
     uint32_t v2; // esi
     char v4[16]; // [esp+4h] [ebp-1Ch] BYREF
 
     memset(fuelcell_attrib_buffer3, 0, 20);
     memcpy(&(fuelcell_attrib_buffer3[4]), (void*)that, 16);
 
-    v1 = (uint32_t)Attrib_Instance_Get(fuelcell_attrib_buffer3, (unsigned int)v4, 0xB0D98A89);
-    v2 = (uint32_t)Attrib_Attribute_GetLength((void*)v1);
+    v1 = (Attrib::Attribute*)Attrib_Instance_Get(fuelcell_attrib_buffer3, (unsigned int)v4, 0xB0D98A89);
+    v2 = v1->GetLength();
+    //v2 = (uint32_t)Attrib_Attribute_GetLength((void*)v1);
+
 
     return v2;
 }
@@ -2382,103 +2173,112 @@ void __fastcall Attrib_Instance_Dtor_Shim(void *_this)
     Attrib_Instance_Dtor((void*)_this);
 }
 
-
 void __declspec(naked) NGEffect_NGEffect()
 {
     _asm
     {
-                sub     esp, 84h
-                push    ebp
-                push    edi
-                mov     edi, [esp+90h]
-                mov     eax, [edi+54h]
-                push    0
-                mov     ebp, ecx
-                push    eax
-                mov     [esp+14h], ebp
-                call    Attrib_Gen_fuelcell_effect_constructor ; Attrib::Gen::fuelcell_effect::fuelcell_effect(Attrib::Collection const *,uint)
-                cmp     dword ptr [ebp+4], 0
-                mov     dword ptr[esp + 88h], 0
-                jz      loc_74A36E
-                push    esi
-                mov     ecx, ebp
-                call    Attrib_Gen_fuelcell_effect_Num_NGEmitter ; Attrib::Gen::fuelcell_effect::Num_NGEmitter(void)
-                xor     esi, esi
-                test    eax, eax
-                mov     [esp+0Ch], eax
-                jle     loc_74A352
-                lea     ecx, [ecx+0]
+        sub     esp, 84h
+        push    ebp
+        push    edi
+        mov     edi, [esp + 90h]
+        mov     eax, [edi + 54h]
+        push    0
+        mov     ebp, ecx
+        push    eax
+        mov[esp + 14h], ebp
+        call    Attrib_Gen_fuelcell_effect_constructor; Attrib::Gen::fuelcell_effect::fuelcell_effect(Attrib::Collection const*, uint)
+        cmp     dword ptr[ebp + 4], 0
+        mov     dword ptr[esp + 88h], 0
+        jz      loc_74A36E
+        push    esi
+        mov     ecx, ebp
+        call    Attrib_Gen_fuelcell_effect_Num_NGEmitter; Attrib::Gen::fuelcell_effect::Num_NGEmitter(void)
+        xor esi, esi
+        test    eax, eax
+        mov[esp + 0Ch], eax
+        jle     loc_74A352
+        lea     ecx, [ecx + 0]
 
-loc_74A2C0:                             ; CODE XREF: NGEffect::NGEffect(XenonEffectDef const &,float)+EC↓j
-                push    esi
-                push    0B0D98A89h
-                mov     ecx, ebp
-                call    Attrib_Instance_GetAttributePointer_Shim
-                test    eax, eax
-                jnz     loc_74A2DB
-                push    0Ch
-                call    Attrib_DefaultDataArea
-                add     esp, 4
+        loc_74A2C0:; CODE XREF : NGEffect::NGEffect(XenonEffectDef const&, float) + EC↓j
+        push    esi
+        push    0B0D98A89h
+        mov     ecx, ebp
+        call    Attrib_Instance_GetAttributePointer_Shim
+        test    eax, eax
+        jnz     loc_74A2DB
+        push    0Ch
+        call    Attrib_DefaultDataArea
+        add     esp, 4
 
-loc_74A2DB:                             ; CODE XREF: NGEffect::NGEffect(XenonEffectDef const &,float)+6F↑j
-                mov     ecx, eax
-                call    Attrib_RefSpec_GetCollection
-                push    edi
-                push    eax
-                lea     ecx, [esp+1Ch]
-                call    CGEmitter_CGEmitter ; CGEmitter::CGEmitter(Attrib::Collection const *,XenonEffectDef const &)
-                lea     ecx, [esp+14h]
-                call fuelcell_emitter_bridge
-                mov     eax, [edi+58h]
-                test    eax, eax
-                mov     byte ptr [esp+8Ch], 1
-                jnz     loc_74A30B // jnz
-                mov     ecx, [edi]
-                mov     edx, [esp+98h]
+        loc_74A2DB:; CODE XREF : NGEffect::NGEffect(XenonEffectDef const&, float) + 6F↑j
+        mov     ecx, eax
+        call    Attrib_RefSpec_GetCollection
+        push    edi
+        push    eax
+        lea     ecx, [esp + 1Ch]
+        call    CGEmitter_CGEmitter; CGEmitter::CGEmitter(Attrib::Collection const*, XenonEffectDef const&)
+        lea     ecx, [esp + 14h]
+        call fuelcell_emitter_bridge
+        mov     eax, [edi + 58h]
+        test    eax, eax
+        mov     byte ptr[esp + 8Ch], 1
+        jnz     loc_74A30B // jnz
+        mov     ecx, [edi]
+            mov     edx, [esp + 98h]
                 push    1
                 push    ecx
                 push    edx
                 jmp     loc_74A31A
-; ---------------------------------------------------------------------------
+                ; -------------------------------------------------------------------------- -
 
-loc_74A30B:                             ; CODE XREF: NGEffect::NGEffect(XenonEffectDef const &,float)+9A↑j
-                mov     eax, [esp+98h]
-                push    0               ; char
-                push    3F800000h       ; float
-                push    eax             ; float
+                loc_74A30B:; CODE XREF : NGEffect::NGEffect(XenonEffectDef const&, float) + 9A↑j
+                mov     eax, [esp + 98h]
+                push    0; char
+                push    3F800000h; float
+                push    eax; float
 
-loc_74A31A:                             ; CODE XREF: NGEffect::NGEffect(XenonEffectDef const &,float)+A9↑j
+                loc_74A31A : ; CODE XREF : NGEffect::NGEffect(XenonEffectDef const&, float) + A9↑j
                 lea     ecx, [esp + 20h]
-                call    CGEmitter_SpawnParticles ; CGEmitter::SpawnParticles(float,float)
+                call    CGEmitter_SpawnParticles; CGEmitter::SpawnParticles(float, float)
                 call fuelcell_emitter_bridge_restore
-                lea     ecx, [esp+24h]
-                mov     byte ptr [esp+8Ch], 2
+                lea     ecx, [esp + 24h]
+                mov     byte ptr[esp + 8Ch], 2
                 call    Attrib_Instance_Dtor_Shim; Attrib::Instance::~Instance((void))
-                lea     ecx, [esp+14h]
-                mov     byte ptr [esp+8Ch], 0
+                lea     ecx, [esp + 14h]
+                mov     byte ptr[esp + 8Ch], 0
                 call    Attrib_Instance_Dtor_Shim; Attrib::Instance::~Instance((void))
-                mov     eax, [esp+0Ch]
+                mov     eax, [esp + 0Ch]
                 inc     esi
                 cmp     esi, eax
                 jl      loc_74A2C0
 
-loc_74A352:                             ; CODE XREF: NGEffect::NGEffect(XenonEffectDef const &,float)+57↑j
+                loc_74A352 : ; CODE XREF : NGEffect::NGEffect(XenonEffectDef const&, float) + 57↑j
                 mov     eax, ebp
                 pop     esi
 
-loc_74A355:                             ; CODE XREF: NGEffect::NGEffect(XenonEffectDef const &,float)+110↓j
+                loc_74A355 : ; CODE XREF : NGEffect::NGEffect(XenonEffectDef const&, float) + 110↓j
                 pop     edi
                 pop     ebp
                 add     esp, 84h
-                
+
                 retn    8
-loc_74A36E:
+                loc_74A36E :
                 mov     eax, ebp
                 jmp     short loc_74A355
     }
 }
 
-void(__thiscall* NGEffect_NGEffect_Abstract)(NGEffect* _this, XenonEffectDef* eDef, float dt) = (void(__thiscall*)(NGEffect *, XenonEffectDef *, float)) & NGEffect_NGEffect;
+class NGEffect;
+void(__thiscall* NGEffect_NGEffect_Abstract)(NGEffect* _this, XenonEffectDef* eDef, float dt) = (void(__thiscall*)(NGEffect*, XenonEffectDef*, float)) & NGEffect_NGEffect;
+
+class NGEffect
+{
+public:
+    NGEffect(XenonEffectDef* eDef, float dt) {
+        NGEffect_NGEffect_Abstract(this, eDef, dt);
+    }
+    Attrib::Gen::fuelcell_effect mEffectDef;
+};
 
 void __declspec(naked) XSpriteManager_AddParticle()
 {
@@ -2774,7 +2574,7 @@ void DrawXenonEmitters(eView *view)
 {
     XenonEffectDef* mpBegin; // ebx
     XenonEffectDef* i; // edx
-    NGEffect effect; // [esp-4h] [ebp-84h]
+    //NGEffect effect; // [esp-4h] [ebp-84h]
     XenonEffectDef effectDef; // [esp+20h] [ebp-60h] BYREF
 
     gParticleList.AgeParticles(EmitterDeltaTime);
@@ -2784,7 +2584,8 @@ void DrawXenonEmitters(eView *view)
         memcpy(&effectDef, mpBegin, sizeof(effectDef));
         if (!effectDef.piggyback_effect || (*((uint32_t*)effectDef.piggyback_effect + 6) & 0x10) != 0)
         {
-            NGEffect_NGEffect_Abstract(&effect, &effectDef, EmitterDeltaTime);
+            NGEffect effect{ &effectDef, EmitterDeltaTime };
+            //NGEffect_NGEffect_Abstract(&effect, &effectDef, EmitterDeltaTime);
             Attrib_Instance_Dtor_Shim(&effect.mEffectDef);
             i = gNGEffectList.mpEnd;
         }
@@ -3039,7 +2840,7 @@ uint32_t sub_6DFAF0_hook()
 }
 
 uint32_t SparkFC = 0;
-void AddXenonEffect_Spark_Hook(void* piggyback_fx, void* spec, bMatrix4* mat, bVector4* vel, float intensity)
+void AddXenonEffect_Spark_Hook(void* piggyback_fx, void* spec, UMath::Matrix4* mat, UMath::Vector4* vel, float intensity)
 {
     if (!bLimitSparkRate)
         return AddXenonEffect(piggyback_fx, spec, mat, vel, SparkIntensity);
@@ -3055,12 +2856,12 @@ void AddXenonEffect_Spark_Hook(void* piggyback_fx, void* spec, bMatrix4* mat, bV
 }
 
 uint32_t ContrailFC = 0;
-void AddXenonEffect_Contrail_Hook(void* piggyback_fx, void* spec, bMatrix4* mat, bVector4* vel, float intensity)
+void AddXenonEffect_Contrail_Hook(void* piggyback_fx, void* spec, UMath::Matrix4* mat, UMath::Vector4* vel, float intensity)
 {
 #ifdef CONTRAIL_TEST
     // TEST CODE
-    bVector4 newvel = { -40.6f, 29.3f, -2.3f, 0.0f };
-    bMatrix4 newmat;
+    UMath::Vector4 newvel = { -40.6f, 29.3f, -2.3f, 0.0f };
+    UMath::Matrix4 newmat;
 
     newmat.v0.x = 0.60f;
     newmat.v0.y = 0.80f;
