@@ -8,7 +8,6 @@
 // - texture filtering messes with drawing coordinates - if it's disabled, sparks are rendered off screen...
 //
 
-#include "stdafx.h"
 #include "stdio.h"
 #include "includes\injector\injector.hpp"
 #include "includes\mINI\src\mini\ini.h"
@@ -307,6 +306,17 @@ ParticleList gParticleList;
 
 //#define numParticles dword ptr gParticleList[PARTICLELIST_SIZE]
 
+// copies the object back to MW's format to avoid crashing during Attrib garbage collection
+char fuelcell_attrib_buffer4[20];
+void __fastcall Attrib_Instance_Dtor_Shim(void* _this)
+{
+    memset(fuelcell_attrib_buffer4, 0, 20);
+    memcpy(&(fuelcell_attrib_buffer4[4]), (void*)_this, 16);
+    memcpy((void*)_this, fuelcell_attrib_buffer4, 20);
+
+    Attrib_Instance_Dtor((void*)_this);
+}
+
 // TODO - replace this with proper Attrib bridge - TBD when fully decompiled
 namespace Attrib
 {
@@ -333,14 +343,20 @@ namespace Attrib
             const char* mNamePtr;
         };
 
-        struct CarbonInstance
+        class CarbonInstance
         {
+        public:
             void* mOwner;
             Attrib::Collection* mCollection;
             void* mLayoutPtr;
             unsigned int mMsgPort;
             unsigned __int16 mFlags;
             unsigned __int16 mLocks;
+        
+            ~CarbonInstance()
+            {
+                Attrib_Instance_Dtor_Shim(this);
+            }
         };
 
         struct RefSpec
@@ -1154,7 +1170,7 @@ void __declspec(naked) CalcCollisiontime(NGParticle* particle)
 
 void(*CalcCollisiontime_Abstract)(NGParticle* particle) = (void(*)(NGParticle*))&CalcCollisiontime;
 
-bool __cdecl BounceParticle(NGParticle* particle)
+bool BounceParticle(NGParticle* particle)
 {
     if (!bBounceParticles)
         return true;
@@ -2162,17 +2178,6 @@ unsigned int __stdcall Attrib_Gen_fuelcell_effect_Num_NGEmitter()
     return v2;
 }
 
-// copies the object back to MW's format to avoid crashing during Attrib garbage collection
-char fuelcell_attrib_buffer4[20];
-void __fastcall Attrib_Instance_Dtor_Shim(void *_this)
-{
-    memset(fuelcell_attrib_buffer4, 0, 20);
-    memcpy(&(fuelcell_attrib_buffer4[4]), (void*)_this, 16);
-    memcpy((void*)_this, fuelcell_attrib_buffer4, 20);
-
-    Attrib_Instance_Dtor((void*)_this);
-}
-
 void __declspec(naked) NGEffect_NGEffect()
 {
     _asm
@@ -2199,7 +2204,7 @@ void __declspec(naked) NGEffect_NGEffect()
         jle     loc_74A352
         lea     ecx, [ecx + 0]
 
-        loc_74A2C0:; CODE XREF : NGEffect::NGEffect(XenonEffectDef const&, float) + EC↓j
+loc_74A2C0: ; CODE XREF : NGEffect::NGEffect(XenonEffectDef const&, float) + EC↓j
         push    esi
         push    0B0D98A89h
         mov     ecx, ebp
@@ -2210,7 +2215,7 @@ void __declspec(naked) NGEffect_NGEffect()
         call    Attrib_DefaultDataArea
         add     esp, 4
 
-        loc_74A2DB:; CODE XREF : NGEffect::NGEffect(XenonEffectDef const&, float) + 6F↑j
+loc_74A2DB: ; CODE XREF : NGEffect::NGEffect(XenonEffectDef const&, float) + 6F↑j
         mov     ecx, eax
         call    Attrib_RefSpec_GetCollection
         push    edi
@@ -2224,58 +2229,55 @@ void __declspec(naked) NGEffect_NGEffect()
         mov     byte ptr[esp + 8Ch], 1
         jnz     loc_74A30B // jnz
         mov     ecx, [edi]
-            mov     edx, [esp + 98h]
-                push    1
-                push    ecx
-                push    edx
-                jmp     loc_74A31A
-                ; -------------------------------------------------------------------------- -
+        mov     edx, [esp + 98h]
+        push    1
+        push    ecx
+        push    edx
+        jmp     loc_74A31A
+; -------------------------------------------------------------------------- -
 
-                loc_74A30B:; CODE XREF : NGEffect::NGEffect(XenonEffectDef const&, float) + 9A↑j
-                mov     eax, [esp + 98h]
-                push    0; char
-                push    3F800000h; float
-                push    eax; float
+loc_74A30B: ; CODE XREF : NGEffect::NGEffect(XenonEffectDef const&, float) + 9A↑j
+        mov     eax, [esp + 98h]
+        push    0; char
+        push    3F800000h; float
+        push    eax; float
 
-                loc_74A31A : ; CODE XREF : NGEffect::NGEffect(XenonEffectDef const&, float) + A9↑j
-                lea     ecx, [esp + 20h]
-                call    CGEmitter_SpawnParticles; CGEmitter::SpawnParticles(float, float)
-                call fuelcell_emitter_bridge_restore
-                lea     ecx, [esp + 24h]
-                mov     byte ptr[esp + 8Ch], 2
-                call    Attrib_Instance_Dtor_Shim; Attrib::Instance::~Instance((void))
-                lea     ecx, [esp + 14h]
-                mov     byte ptr[esp + 8Ch], 0
-                call    Attrib_Instance_Dtor_Shim; Attrib::Instance::~Instance((void))
-                mov     eax, [esp + 0Ch]
-                inc     esi
-                cmp     esi, eax
-                jl      loc_74A2C0
+loc_74A31A: ; CODE XREF : NGEffect::NGEffect(XenonEffectDef const&, float) + A9↑j
+        lea     ecx, [esp + 20h]
+        call    CGEmitter_SpawnParticles; CGEmitter::SpawnParticles(float, float)
+        call fuelcell_emitter_bridge_restore
+        lea     ecx, [esp + 24h]
+        mov     byte ptr[esp + 8Ch], 2
+        call    Attrib_Instance_Dtor_Shim; Attrib::Instance::~Instance((void))
+        lea     ecx, [esp + 14h]
+        mov     byte ptr[esp + 8Ch], 0
+        call    Attrib_Instance_Dtor_Shim; Attrib::Instance::~Instance((void))
+        mov     eax, [esp + 0Ch]
+        inc     esi
+        cmp     esi, eax
+        jl      loc_74A2C0
 
-                loc_74A352 : ; CODE XREF : NGEffect::NGEffect(XenonEffectDef const&, float) + 57↑j
-                mov     eax, ebp
-                pop     esi
+loc_74A352: ; CODE XREF : NGEffect::NGEffect(XenonEffectDef const&, float) + 57↑j
+        mov     eax, ebp
+        pop     esi
 
-                loc_74A355 : ; CODE XREF : NGEffect::NGEffect(XenonEffectDef const&, float) + 110↓j
-                pop     edi
-                pop     ebp
-                add     esp, 84h
+loc_74A355: ; CODE XREF : NGEffect::NGEffect(XenonEffectDef const&, float) + 110↓j
+        pop     edi
+        pop     ebp
+        add     esp, 84h
 
-                retn    8
-                loc_74A36E :
-                mov     eax, ebp
-                jmp     short loc_74A355
+        retn    8
+loc_74A36E:
+        mov     eax, ebp
+        jmp     short loc_74A355
     }
 }
-
-class NGEffect;
-void(__thiscall* NGEffect_NGEffect_Abstract)(NGEffect* _this, XenonEffectDef* eDef, float dt) = (void(__thiscall*)(NGEffect*, XenonEffectDef*, float)) & NGEffect_NGEffect;
 
 class NGEffect
 {
 public:
     NGEffect(XenonEffectDef* eDef, float dt) {
-        NGEffect_NGEffect_Abstract(this, eDef, dt);
+        ((void(__thiscall*)(NGEffect*, XenonEffectDef*, float)) & NGEffect_NGEffect)(this, eDef, dt);
     }
     Attrib::Gen::fuelcell_effect mEffectDef;
 };
@@ -2585,8 +2587,6 @@ void DrawXenonEmitters(eView *view)
         if (!effectDef.piggyback_effect || (*((uint32_t*)effectDef.piggyback_effect + 6) & 0x10) != 0)
         {
             NGEffect effect{ &effectDef, EmitterDeltaTime };
-            //NGEffect_NGEffect_Abstract(&effect, &effectDef, EmitterDeltaTime);
-            Attrib_Instance_Dtor_Shim(&effect.mEffectDef);
             i = gNGEffectList.mpEnd;
         }
     }

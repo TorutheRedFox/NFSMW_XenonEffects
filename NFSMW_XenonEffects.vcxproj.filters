@@ -2,18 +2,37 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <ClCompile Include="dllmain.cpp" />
-    <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="Attrib\Attrib.cpp">
       <Filter>Attrib</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="UMath\UMath.h">
       <Filter>UMath</Filter>
     </ClInclude>
     <ClInclude Include="Attrib\Attrib.h">
+      <Filter>Attrib</Filter>
+    </ClInclude>
+    <ClInclude Include="Attrib\AttribCollection.h">
+      <Filter>Attrib</Filter>
+    </ClInclude>
+    <ClInclude Include="Attrib\AttribCore.h">
+      <Filter>Attrib</Filter>
+    </ClInclude>
+    <ClInclude Include="Attrib\AttribHashMap.h">
+      <Filter>Attrib</Filter>
+    </ClInclude>
+    <ClInclude Include="Attrib\AttribArray.h">
+      <Filter>Attrib</Filter>
+    </ClInclude>
+    <ClInclude Include="Attrib\AttribInstance.h">
+      <Filter>Attrib</Filter>
+    </ClInclude>
+    <ClInclude Include="Attrib\AttribNode.h">
+      <Filter>Attrib</Filter>
+    </ClInclude>
+    <ClInclude Include="Attrib\AttribAttribute.h">
       <Filter>Attrib</Filter>
     </ClInclude>
   </ItemGroup>
