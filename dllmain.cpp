@@ -346,12 +346,10 @@ namespace Attrib
         class CarbonInstance
         {
         public:
-            void* mOwner;
             Attrib::Collection* mCollection;
             void* mLayoutPtr;
             unsigned int mMsgPort;
-            unsigned __int16 mFlags;
-            unsigned __int16 mLocks;
+            unsigned int mFlags;
         
             ~CarbonInstance()
             {
@@ -2099,44 +2097,44 @@ void __declspec(naked) CGEmitter_CGEmitter()
 {
     _asm
     {
-                 sub esp, 10h
-                 mov     eax, [esp+14h]
-                 push    ebx
-                 push    esi
-                 push    edi
-                 push    0
-                 mov     ebx, ecx
-                 push    eax
-                 mov     [esp+14h], ebx
-                 call    Attrib_Gen_fuelcell_emitter_constructor_shim; Attrib::Gen::fuelcell_emitter::fuelcell_emitter(Attrib::Collection const *,uint)
-                 mov     ecx, [ebx+4]
-                 add     ecx, 60h ; '`'
-                 push    0
-                 push    ecx
-                 lea     ecx, [ebx+10h]
-                 mov     dword ptr [esp+20h], 0
-                 call    sub_737610_shim
-                 mov     eax, [esp+24h]
-                 lea     esi, [eax+14h]
-                 add     eax, 4
-                 lea     edi, [ebx+30h]
-                 mov     ecx, 10h
-                 rep movsd
-                 mov     ecx, [eax]
-                 lea     edx, [ebx+20h]
-                 mov     [edx], ecx
-                 mov     ecx, [eax+4]
-                 mov     [edx+4], ecx
-                 mov     ecx, [eax+8]
-                 mov     [edx+8], ecx
-                 mov     eax, [eax+0Ch]
-                 pop     edi
-                 mov     [edx+0Ch], eax
-                 pop     esi
-                 mov     eax, ebx
-                 pop     ebx
-                 add     esp, 10h
-                 retn    8
+          sub esp, 10h
+          mov     eax, [esp+14h]
+          push    ebx
+          push    esi
+          push    edi
+          push    0
+          mov     ebx, ecx
+          push    eax
+          mov     [esp+14h], ebx
+          call    Attrib_Gen_fuelcell_emitter_constructor_shim; Attrib::Gen::fuelcell_emitter::fuelcell_emitter(Attrib::Collection const *,uint)
+          mov     ecx, [ebx+4]
+          add     ecx, 60h ; '`'
+          push    0
+          push    ecx
+          lea     ecx, [ebx+10h]
+          mov     dword ptr [esp+20h], 0
+          call    sub_737610_shim
+          mov     eax, [esp+24h]
+          lea     esi, [eax+14h]
+          add     eax, 4
+          lea     edi, [ebx+30h]
+          mov     ecx, 10h
+          rep movsd
+          mov     ecx, [eax]
+          lea     edx, [ebx+20h]
+          mov     [edx], ecx
+          mov     ecx, [eax+4]
+          mov     [edx+4], ecx
+          mov     ecx, [eax+8]
+          mov     [edx+8], ecx
+          mov     eax, [eax+0Ch]
+          pop     edi
+          mov     [edx+0Ch], eax
+          pop     esi
+          mov     eax, ebx
+          pop     ebx
+          add     esp, 10h
+          retn    8
     }
 }
 
