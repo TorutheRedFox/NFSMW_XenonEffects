@@ -293,12 +293,19 @@ inline constexpr NGParticle::Flags operator&(NGParticle::Flags a, NGParticle::Fl
     return static_cast<NGParticle::Flags>(static_cast<int>(a) & static_cast<int>(b));
 }
 
+struct eView
+{
+    void* PlatInfo;
+    uint32_t EVIEW_ID;
+};
+
 class ParticleList
 {
 public:
     NGParticle* mParticles;// [1000] ;
     unsigned int mNumParticles;
     void AgeParticles(float dt);
+    void GeneratePolys(eView* view);
 };
 
 ParticleList gParticleList;
@@ -414,12 +421,6 @@ namespace Attrib
     }
 }
 
-struct eView
-{
-    void* PlatInfo;
-    uint32_t EVIEW_ID;
-};
-
 template <typename T, typename U>
 struct SpriteBuffer
 {
@@ -439,23 +440,23 @@ struct XSpark
     XSparkVert v[4];
 };
 
-template <typename Sprite, typename SpriteVert, int BufferCount>
+template <typename Sprite, typename SpriteVert>
 struct XSpriteList
 {
-    SpriteBuffer<Sprite, SpriteVert> mSprintListView[BufferCount];
+    SpriteBuffer<Sprite, SpriteVert> mSprintListView;
     int mNumViews;
-    int mCurrViewBuffer;
     unsigned int mMaxSprites;
+    unsigned int mNumSprites;
     TextureInfo* mTexture;
 };
 
-class __declspec(align(4)) XSpriteManager
+class XSpriteManager
 {
 public:
-    XSpriteList<XSpark, XSparkVert, 1> sparkList;
-    void* debris;
+    XSpriteList<XSpark, XSparkVert> sparkList;
     bool bBatching;
     void DrawBatch(eView* view);
+    void AddParticle(eView* view, NGParticle* particleList, unsigned int numParticles);
 };
 
 float flt_9C92F0 = 255.0f;
@@ -541,11 +542,7 @@ float GetElasticityValue(uint32_t key)
     return 0.0f;
 }
 
-//char NGSpriteManager_ClassData[128];
-
 XSpriteManager NGSpriteManager;
-
-uint32_t NGSpriteManager_thing[32] = { (uint32_t)(&NGSpriteManager), 0};
 
 float GetTargetFrametime()
 {
@@ -2280,295 +2277,86 @@ public:
     Attrib::Gen::fuelcell_effect mEffectDef;
 };
 
-void __declspec(naked) XSpriteManager_AddParticle()
+void XSpriteManager::AddParticle(eView* view, NGParticle* particleList, unsigned int numParticles)
 {
-    _asm
+    XSpark* sparkBuffer;
+
+    sparkList.mSprintListView.vertex_buffer->Lock(
+        0,
+        96 * sparkList.mMaxSprites,
+        (void**)&sparkBuffer,
+        D3DLOCK_DISCARD);
+
+    sparkList.mNumSprites = 0;
+
+    bBatching = true;
+
+    for (size_t i = 0; i < numParticles; i++)
     {
-        sub     esp, 1Ch
-        push    ebx
-        push    ebp
-        mov     ebp, ecx
-        push    esi
-        mov     esi, [ebp + 0]
-        push    2000h // Flags D3DLOCK_DISCARD
-        lea     ecx, [esi + 1Ch]
-        push    ecx // **ppbData
-        mov     bl, 1
-        mov[ebp + 4], bl
-        mov     ecx, [esi + 0Ch]
-        mov     eax, [esi]
-        mov     edx, [eax]
-        lea     ecx, [ecx + ecx * 2]
-        shl     ecx, 5
-        push    ecx // SizeToLock
-        push    0 // OffsetToLock
-        push    eax
-        mov[esp + 20h], ebp
-        call    dword ptr[edx + 2Ch]; DriverVertexBuffer::Lock
-        mov     ecx, [esp + 34h]
-        test    ecx, ecx
-        mov     dword ptr[esi + 10h], 0
-        mov[esi + 18h], bl
-        jbe     loc_74EDF3
-        push    edi
-        mov     edi, [esp + 34h]
-        lea     eax, [edi + 18h]
-        mov[esp + 38h], ecx
+        NGParticle* particle = &particleList[i];
+        
+        float x = particle->age * particle->vel.x + particle->initialPos.x;
+        float y = particle->age * particle->vel.y + particle->initialPos.y;
+        float z = particle->age * particle->vel.z + particle->initialPos.z + particle->age * particle->age * particle->gravity;
 
-        loc_74EC13 : ; CODE XREF : XSpriteManager::AddParticle(eView*, NGParticle const*, uint) + 22C↓j
-        fld     dword ptr[eax + 1Ch]
-        mov     edx, [ebp + 0]
-        fld     st
-        mov     esi, [edx + 10h]
-        fmul    dword ptr[eax - 8]
-        mov     ecx, [edx + 0Ch]
-        cmp     esi, ecx
-        fadd    dword ptr[edi]
-        fstp    dword ptr[esp + 14h]
-        fld     st
-        fmul    dword ptr[eax - 4]
-        fadd    dword ptr[eax - 14h]
-        fstp    dword ptr[esp + 18h]
-        fld     dword ptr[eax + 1Ch]
-        fxch    st(1)
-        fmul    dword ptr[eax]
-        fadd    dword ptr[eax - 10h]
-        fld     st(1)
-        fmul    st, st(2)
-        fmul    dword ptr[eax + 4]
-        faddp   st(1), st
-        fstp    dword ptr[esp + 1Ch]
-        fstp    st
-        jnb     loc_74EDDD
-        mov     ebx, [edx + 1Ch]
-        lea     ecx, [esi + esi * 2]
-        shl     ecx, 5
-        add     ecx, ebx
-        lea     esi, [esi + 1]
-        mov[edx + 10h], esi
-        jz      loc_74EDDD
-        mov     edx, [esp + 14h]
-        mov     esi, [esp + 18h]
-        mov     ebx, [esp + 1Ch]
-        mov     ebp, ecx
-        mov[ebp + 0], edx
-        mov[ebp + 4], esi
-        mov[ebp + 8], ebx
-        mov     ebp, [eax - 0Ch]
-        mov[ecx + 0Ch], ebp
-        movzx   ebp, byte ptr[eax + 2Ch]
-        mov[esp + 34h], ebp
-        fild    dword ptr[esp + 34h]
-        fmul    ds : flt_9C77C8
-        fstp    dword ptr[ecx + 10h]
-        movzx   ebp, byte ptr[eax + 2Dh]
-        mov[esp + 34h], ebp
-        fild    dword ptr[esp + 34h]
-        fmul    ds : flt_9C77C8
-        fstp    dword ptr[ecx + 14h]
-        movzx   ebp, byte ptr[eax + 28h]
-        mov[esp + 34h], ebp
-        lea     ebp, [ecx + 18h]
-        mov[ebp + 0], edx
-        fild    dword ptr[esp + 34h]
-        mov[ebp + 4], esi
-        mov[ebp + 8], ebx
-        fmul    ds : flt_9EAFFC
-        fld     st
-        fadd    dword ptr[ecx + 20h]
-        fstp    dword ptr[ecx + 20h]
-        mov     edx, [eax - 0Ch]
-        mov[ecx + 24h], edx
-        movzx   edx, byte ptr[eax + 2Eh]
-        mov[esp + 34h], edx
-        fild    dword ptr[esp + 34h]
-        fmul    ds : flt_9C77C8
-        fstp    dword ptr[ecx + 28h]
-        movzx   edx, byte ptr[eax + 2Dh]
-        mov[esp + 34h], edx
-        fild    dword ptr[esp + 34h]
-        fmul    ds : flt_9C77C8
-        fstp    dword ptr[ecx + 2Ch]
-        movzx   edx, byte ptr[eax + 29h]
-        mov[esp + 34h], edx
-        lea     edx, [ecx + 30h]
-        mov     ebp, edx
-        fild    dword ptr[esp + 34h]
-        fmul    ds : flt_9EAFFC
-        fadd    dword ptr[eax + 1Ch]
-        fld     st
-        fmul    dword ptr[eax - 8]
-        fadd    dword ptr[edi]
-        fstp    dword ptr[esp + 20h]
-        mov     edx, [esp + 20h]
-        fld     st
-        fmul    dword ptr[eax - 4]
-        fadd    dword ptr[eax - 14h]
-        fstp    dword ptr[esp + 24h]
-        mov     esi, [esp + 24h]
-        fld     st
-        fmul    dword ptr[eax]
-        fadd    dword ptr[eax - 10h]
-        fld     st(1)
-        fmul    dword ptr[eax + 4]
-        mov[ebp + 0], edx
-        mov[ebp + 4], esi
-        fmul    st, st(2)
-        faddp   st(1), st
-        fstp    dword ptr[esp + 28h]
-        mov     ebx, [esp + 28h]
-        mov[ebp + 8], ebx
-        fstp    st
-        fadd    dword ptr[ecx + 38h]
-        fstp    dword ptr[ecx + 38h]
-        mov     ebp, [eax - 0Ch]
-        mov[ecx + 3Ch], ebp
-        movzx   ebp, byte ptr[eax + 2Eh]
-        mov[esp + 34h], ebp
-        fild    dword ptr[esp + 34h]
-        fmul    ds : flt_9C77C8
-        fstp    dword ptr[ecx + 40h]
-        movzx   ebp, byte ptr[eax + 2Fh]
-        mov[esp + 34h], ebp
-        lea     ebp, [ecx + 48h]
-        mov[ebp + 0], edx
-        fild    dword ptr[esp + 34h]
-        mov[ebp + 4], esi
-        mov[ebp + 8], ebx
-        mov     ebp, [esp + 10h]
-        fmul    ds : flt_9C77C8
-        fstp    dword ptr[ecx + 44h]
-        mov     edx, [eax - 0Ch]
-        mov[ecx + 54h], edx
-        movzx   edx, byte ptr[eax + 2Ch]
-        mov[esp + 34h], edx
-        fild    dword ptr[esp + 34h]
-        fmul    ds : flt_9C77C8
-        fstp    dword ptr[ecx + 58h]
-        movzx   edx, byte ptr[eax + 2Fh]
-        mov[esp + 34h], edx
-        fild    dword ptr[esp + 34h]
-        fmul    ds : flt_9C77C8
-        fstp    dword ptr[ecx + 5Ch]
+        if (i < sparkList.mMaxSprites)
+        {
+            XSpark *spark = &sparkBuffer[i];
 
-        loc_74EDDD : ; CODE XREF : XSpriteManager::AddParticle(eView*, NGParticle const*, uint) + 91↑j
-        ; XSpriteManager::AddParticle(eView*, NGParticle const*, uint) + A8↑j
-        mov     ecx, [esp + 38h]
-        add     edi, 48h; 'H'
-        add     eax, 48h; 'H'
-        dec     ecx
-        mov[esp + 38h], ecx
-        jnz     loc_74EC13
-        pop     edi
+            sparkList.mNumSprites = i;
 
-        loc_74EDF3 : ; CODE XREF : XSpriteManager::AddParticle(eView*, NGParticle const*, uint) + 41↑j
-        mov     byte ptr[ebp + 4], 0
-        mov     ebp, [ebp + 0]
-        mov     al, [ebp + 18h]
-        test    al, al
-        jz      short loc_74EE0B
-        cmp     dword ptr[ebp + 0], 0
-        jz      short loc_74EE0B
-        mov     byte ptr[ebp + 18h], 0
+            if (spark)
+            {
+                spark->v[0].position.x = x;
+                spark->v[0].position.y = y;
+                spark->v[0].position.z = z;
+                spark->v[0].color = particle->color;
+                spark->v[0].texcoord[0] = particle->uv[0] / 255.0f;
+                spark->v[0].texcoord[1] = particle->uv[1] / 255.0f;
 
-        loc_74EE0B:; CODE XREF : XSpriteManager::AddParticle(eView*, NGParticle const*, uint) + 23F↑j
-        ; XSpriteManager::AddParticle(eView*, NGParticle const*, uint) + 245↑j
-        mov     eax, [ebp + 0]
-        mov     ecx, [eax]
-        push    eax
-        call    dword ptr[ecx + 30h]
-        pop     esi
-        mov     dword ptr[ebp + 1Ch], 0
-        pop     ebp
-        pop     ebx
-        add     esp, 1Ch
-        retn    0Ch
+                spark->v[1].position.x = x;
+                spark->v[1].position.y = y;
+                spark->v[1].position.z = z + particle->size / 2048.0f;
+                spark->v[1].color = particle->color;
+                spark->v[1].texcoord[0] = particle->uv[2] / 255.0f;
+                spark->v[1].texcoord[1] = particle->uv[1] / 255.0f;
+
+                float offsetAge = particle->startX / 2048.0f + particle->age;
+                x = offsetAge * particle->vel.x + particle->initialPos.x;
+                y = offsetAge * particle->vel.y + particle->initialPos.y;
+                z = offsetAge * particle->vel.z + particle->initialPos.z;
+                z += offsetAge * particle->gravity * offsetAge;
+                
+                spark->v[2].position.x = x;
+                spark->v[2].position.y = y;
+                spark->v[2].position.z = z + particle->size / 2048.0f;
+                spark->v[2].color = particle->color;
+                spark->v[2].texcoord[0] = particle->uv[2] / 255.0f;
+                spark->v[2].texcoord[1] = particle->uv[3] / 255.0f;
+
+                spark->v[3].position.x = x;
+                spark->v[3].position.y = y;
+                spark->v[3].position.z = z;
+                spark->v[3].color = particle->color;
+                spark->v[3].texcoord[0] = particle->uv[0] / 255.0f;
+                spark->v[3].texcoord[1] = particle->uv[3] / 255.0f;
+            }
+        }
     }
+    
+    if (bBatching && sparkList.mSprintListView.vertex_buffer)
+        bBatching = false;
+
+    sparkList.mSprintListView.vertex_buffer->Unlock();
+
+    sparkBuffer = NULL;
 }
 
-void (__thiscall* XSpriteManager_AddParticle_Abstract)(void* _this,
-        eView *view,
-        NGParticle *particleList,
-        const unsigned int numParticles) = (void (__thiscall*)(void*, eView*, NGParticle*, const unsigned int))&XSpriteManager_AddParticle;
-
-//void __declspec(naked) DrawXenonEmitters(void* eView)
-//{
-//    _asm
-//    {
-//        push    ebp
-//        mov     ebp, esp
-//        and esp, 0FFFFFFF8h
-//        sub     esp, 74h
-//        mov     eax, EmitterDeltaTime
-//        push    ebx
-//        push    esi
-//        mov     ecx, eax
-//        push    edi
-//        push    ecx; float
-//        mov     ecx, offset gParticleList
-//        mov[esp + 10h], eax
-//        mov     EmitterDeltaTime, 0
-//        call    ParticleList::AgeParticles
-//        mov     ebx, dword ptr gNGEffectList
-//        mov     edx, dword ptr gNGEffectList[4]
-//        cmp     ebx, edx
-//        jz      loc_754C78
-//        lea     esp, [esp + 0]
-//
-//        loc_754C30:
-//        mov     ecx, 17h
-//        mov     esi, ebx
-//        lea     edi, [esp + 20h]
-//        rep movsd
-//        mov     eax, [esp + 78h]
-//        test    eax, eax
-//        jz      loc_754C4F
-//        mov     eax, [eax + 18h]
-//        shr     eax, 4
-//        test    al, 1
-//        jz      loc_754C71
-//
-//        loc_754C4F:
-//        mov     ecx, [esp + 0Ch]
-//        push    ecx
-//        lea     edx, [esp + 24h]
-//        push    edx
-//        lea     ecx, [esp + 18h]
-//        call    NGEffect_NGEffect
-//        lea     ecx, [esp + 10h]
-//        call    Attrib_Instance_Dtor_Shim
-//        mov     edx, dword ptr gNGEffectList[4]
-//
-//        loc_754C71:
-//        add     ebx, 5Ch; '\'
-//        cmp     ebx, edx
-//        jnz     loc_754C30
-//
-//        loc_754C78 : ; CODE XREF : DrawXenonEmitters(eView*) + 3A↑j
-//        mov     eax, dword ptr gNGEffectList
-//        push    edx
-//        push    eax
-//        mov     ecx, offset gNGEffectList
-//        call    eastl_vector_erase_XenonEffectDef
-//        mov     eax, dword ptr [gParticleList.mNumParticles]
-//        test    eax, eax
-//        jz      loc_754CA6
-//        mov     ecx, [ebp + 8]
-//        push    eax
-//        push    gParticleList.mParticles
-//        push    ecx
-//        mov     ecx, offset NGSpriteManager
-//        call    XSpriteManager_AddParticle
-//
-//        loc_754CA6:; CODE XREF : DrawXenonEmitters(eView*) + A0↑j
-//        pop     edi
-//        pop     esi
-//        pop     ebx
-//        mov     esp, ebp
-//        pop     ebp
-//        retn
-//    }
-//}
+void ParticleList::GeneratePolys(eView* view)
+{
+    if (mNumParticles)
+        NGSpriteManager.AddParticle(view, mParticles, mNumParticles);
+}
 
 void DrawXenonEmitters(eView *view)
 {
@@ -2590,8 +2378,7 @@ void DrawXenonEmitters(eView *view)
     }
     EmitterDeltaTime = 0.0f;
     eastl_vector_erase_XenonEffectDef_Abstract(&gNGEffectList, gNGEffectList.mpBegin, gNGEffectList.mpEnd);
-    if (gParticleList.mNumParticles)
-        XSpriteManager_AddParticle_Abstract(NGSpriteManager_thing, view, gParticleList.mParticles, gParticleList.mNumParticles);
+    gParticleList.GeneratePolys(view);
 }
 
 // RENDERER STUFF START
@@ -2747,10 +2534,10 @@ void __stdcall ReleaseRenderObj()
 {
     //SpriteManager* sm = (SpriteManager*)NGSpriteManager_ClassData;
 
-    if (NGSpriteManager.sparkList.mSprintListView[0].vertex_buffer)
-        NGSpriteManager.sparkList.mSprintListView[0].vertex_buffer->Release();
-    if (NGSpriteManager.sparkList.mSprintListView[0].vertex_buffer)
-        NGSpriteManager.sparkList.mSprintListView[0].vertex_buffer->Release();
+    if (NGSpriteManager.sparkList.mSprintListView.vertex_buffer)
+        NGSpriteManager.sparkList.mSprintListView.vertex_buffer->Release();
+    if (NGSpriteManager.sparkList.mSprintListView.vertex_buffer)
+        NGSpriteManager.sparkList.mSprintListView.vertex_buffer->Release();
 }
 
 void XSpriteManager::DrawBatch(eView* view)
@@ -2767,10 +2554,10 @@ void XSpriteManager::DrawBatch(eView* view)
     effect->BeginPass(0);
 
     g_D3DDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
-    if (sparkList.mMaxSprites && gParticleList.mNumParticles)
+    if (sparkList.mNumSprites && gParticleList.mNumParticles)
     {
-        g_D3DDevice->SetStreamSource(0, sparkList.mSprintListView[0].vertex_buffer, 0, 0x18);
-        g_D3DDevice->SetIndices(sparkList.mSprintListView[0].index_buffer);
+        g_D3DDevice->SetStreamSource(0, sparkList.mSprintListView.vertex_buffer, 0, 0x18);
+        g_D3DDevice->SetIndices(sparkList.mSprintListView.index_buffer);
 
         if (sparkList.mTexture)
         {
@@ -2792,7 +2579,7 @@ void XSpriteManager::DrawBatch(eView* view)
 
         effect->CommitChanges();
 
-        g_D3DDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, 4 * sparkList.mMaxSprites, 0, 2 * sparkList.mMaxSprites);
+        g_D3DDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, 4 * sparkList.mNumSprites, 0, 2 * sparkList.mNumSprites);
     }
     g_D3DDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
 
