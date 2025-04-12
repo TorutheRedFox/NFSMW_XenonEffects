@@ -34,6 +34,7 @@ bool bPassShadowMap = false;
 bool bUseD3DDeviceTexture = false;
 bool bBounceParticles = true;
 bool bCarbonBounceBehavior = false;
+bool bFadeOutParticles = false;
 float ContrailTargetFPS = 30.0f;
 float SparkTargetFPS = 60.0f;
 float ContrailSpeed = 44.0f;
@@ -2307,17 +2308,22 @@ void XSpriteManager::AddParticle(eView* view, NGParticle* particleList, unsigned
 
             if (spark)
             {
+                uint32_t color = particle->color;
+
+                if (bFadeOutParticles)
+                    ((uint8_t*)&color)[3] *= 1 - pow((particle->age / particle->life), 1.1f); // QOL feature
+
                 spark->v[0].position.x = x;
                 spark->v[0].position.y = y;
                 spark->v[0].position.z = z;
-                spark->v[0].color = particle->color;
+                spark->v[0].color = color;
                 spark->v[0].texcoord[0] = particle->uv[0] / 255.0f;
                 spark->v[0].texcoord[1] = particle->uv[1] / 255.0f;
 
                 spark->v[1].position.x = x;
                 spark->v[1].position.y = y;
                 spark->v[1].position.z = z + particle->size / 2048.0f;
-                spark->v[1].color = particle->color;
+                spark->v[1].color = color;
                 spark->v[1].texcoord[0] = particle->uv[2] / 255.0f;
                 spark->v[1].texcoord[1] = particle->uv[1] / 255.0f;
 
@@ -2330,14 +2336,14 @@ void XSpriteManager::AddParticle(eView* view, NGParticle* particleList, unsigned
                 spark->v[2].position.x = x;
                 spark->v[2].position.y = y;
                 spark->v[2].position.z = z + particle->size / 2048.0f;
-                spark->v[2].color = particle->color;
+                spark->v[2].color = color;
                 spark->v[2].texcoord[0] = particle->uv[2] / 255.0f;
                 spark->v[2].texcoord[1] = particle->uv[3] / 255.0f;
 
                 spark->v[3].position.x = x;
                 spark->v[3].position.y = y;
                 spark->v[3].position.z = z;
-                spark->v[3].color = particle->color;
+                spark->v[3].color = color;
                 spark->v[3].texcoord[0] = particle->uv[0] / 255.0f;
                 spark->v[3].texcoord[1] = particle->uv[3] / 255.0f;
             }
@@ -2925,6 +2931,8 @@ void InitConfig()
             bLimitContrailRate = std::stol(ini["MAIN"]["LimitContrailRate"]) != 0;
         if (ini["MAIN"].has("LimitSparkRate"))
             bLimitSparkRate = std::stol(ini["MAIN"]["LimitSparkRate"]) != 0;
+        if (ini["MAIN"].has("FadeOutParticles"))
+            bFadeOutParticles = std::stol(ini["MAIN"]["FadeOutParticles"]) != 0;
     }
 
     if (ini.has("Limits"))
