@@ -52,8 +52,21 @@ uint32_t SparkFrameDelay = 1;
 #define GAMEFLOWSTATUS_ADDR 0x00925E90
 #define FASTMEM_ADDR 0x00925B30
 #define NISINSTANCE_ADDR 0x009885C8
-#define WORLDPRELITSHADER_OBJ_ADDR 0x0093DEBC
+#define WORLDPRELITSHADER_OBJ_ADDR 0x93DEBC
 #define CURRENTSHADER_OBJ_ADDR 0x00982C80
+
+// this is nowhere near complete, but it's just enough
+class eEffect
+{
+public:
+    virtual void vecDTor();
+    virtual void Start();
+    virtual void End();
+private:
+    uint8_t pad[0x44];
+public:
+    LPD3DXEFFECT mEffectHandlePlat;
+};
 
 #define FRAMECOUNTER_ADDR 0x00982B78
 #define eFrameCounter *(uint32_t*)FRAMECOUNTER_ADDR
@@ -157,7 +170,7 @@ void* (__thiscall* Attrib_Instance_Refspec)(void* AttribCollection, void* refspe
 void* (__cdecl* Attrib_FindCollection)(uint32_t param1, uint32_t param2) = (void* (__cdecl*)(uint32_t, uint32_t))0x00455FD0;
 float (__cdecl* bRandom_Float_Int)(float range, int unk) = (float (__cdecl*)(float, int))0x0045D9E0;
 int(__cdecl* bRandom_Int_Int)(int range, uint32_t* unk) = (int(__cdecl*)(int, uint32_t*))0x0045D9A0;
-unsigned int(__cdecl* bStringHash)(char* str) = (unsigned int(__cdecl*)(char*))0x00460BF0;
+unsigned int(__cdecl* bStringHash)(const char* str) = (unsigned int(__cdecl*)(const char*))0x00460BF0;
 TextureInfo*(__cdecl* GetTextureInfo)(unsigned int name_hash, int return_default_texture_if_not_found, int include_unloaded_textures) = (TextureInfo*(__cdecl*)(unsigned int, int, int))0x00503400;
 void (__thiscall* EmitterSystem_UpdateParticles)(void* EmitterSystem, float dt) = (void (__thiscall*)(void*, float))0x00508C30;
 void(__thiscall* EmitterSystem_Render)(void* EmitterSystem, void* eView) = (void(__thiscall*)(void*, void*))0x00503D00;
@@ -422,11 +435,91 @@ namespace Attrib
     }
 }
 
+LPDIRECT3DDEVICE9 &g_D3DDevice = *(LPDIRECT3DDEVICE9*)0x982BDC;
+
 template <typename T, typename U>
 struct SpriteBuffer
 {
     IDirect3DVertexBuffer9* vertex_buffer;
     IDirect3DIndexBuffer9* index_buffer;
+    unsigned int mVertexCount;
+    unsigned int mMaxSprites;
+    unsigned int mNumPolys;
+
+    void Draw(eEffect &effect, TextureInfo* pTexture)
+    {
+        g_D3DDevice->SetStreamSource(0, vertex_buffer, 0, 0x18);
+        g_D3DDevice->SetIndices(index_buffer);
+
+        if (pTexture)
+        {
+            if (bUseD3DDeviceTexture)
+            {
+                g_D3DDevice->SetTexture(0, pTexture->PlatInfo->pD3DTexture);
+                g_D3DDevice->SetRenderState(D3DRS_ALPHAREF, (DWORD)0x000000B0);
+                g_D3DDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
+                g_D3DDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+                g_D3DDevice->SetRenderState(D3DRS_ALPHAFUNC, D3DCMP_GREATER);
+                g_D3DDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
+                g_D3DDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
+                g_D3DDevice->SetRenderState(D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_RED | D3DCOLORWRITEENABLE_GREEN | D3DCOLORWRITEENABLE_BLUE);
+            }
+            else
+                GameSetTexture(pTexture, 0);
+        }
+
+        effect.mEffectHandlePlat->CommitChanges();
+
+        g_D3DDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, 4 * mNumPolys, 0, 2 * mNumPolys);
+    }
+
+    void Init(uint32_t spriteCount)
+    {
+        unsigned int v5; // ebp
+        int v6; // ecx
+        int v7; // eax
+
+        uint16_t* idxBuf;
+
+        vertex_buffer = NULL;
+        mNumPolys = 0;
+        mVertexCount = 4 * spriteCount;
+        mMaxSprites = spriteCount;
+        g_D3DDevice->CreateVertexBuffer(96 * (spriteCount + 3), D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY, 0, D3DPOOL_DEFAULT, &vertex_buffer, 0);
+        g_D3DDevice->CreateIndexBuffer(
+            12 * spriteCount,
+            D3DUSAGE_WRITEONLY,
+            D3DFMT_INDEX16,
+            D3DPOOL_MANAGED,
+            &index_buffer,
+            0);
+        v5 = 0;
+        if (index_buffer->Lock(NULL, NULL, (void**)&idxBuf, NULL) != S_OK)
+        {
+            index_buffer = NULL;
+        }
+        else
+        {
+            if (spriteCount)
+            {
+                v6 = 0;
+                v7 = 3;
+                do
+                {
+                    idxBuf[v7 - 3] = v6;
+                    idxBuf[v7 - 2] = v6 + 1;
+                    idxBuf[v7 - 1] = v6 + 2;
+                    idxBuf[v7] = v6;
+                    idxBuf[v7 + 1] = v6 + 2;
+                    idxBuf[v7 + 2] = v6 + 3;
+                    ++v5;
+                    v7 += 6;
+                    v6 += 4;
+                } while (v5 < spriteCount);
+            }
+            index_buffer->Unlock();
+        }
+    }
 };
 
 struct XSparkVert
@@ -442,13 +535,25 @@ struct XSpark
 };
 
 template <typename Sprite, typename SpriteVert>
-struct XSpriteList
+class XSpriteList
 {
+public:
     SpriteBuffer<Sprite, SpriteVert> mSprintListView;
-    int mNumViews;
-    unsigned int mMaxSprites;
-    unsigned int mNumSprites;
     TextureInfo* mTexture;
+    void Draw(int viewId, int viewBuffer, eEffect &effect, TextureInfo* pOverrideTexture)
+    {
+        if (mSprintListView.mNumPolys)
+        {
+            mSprintListView.Draw(effect, this->mTexture);
+        }
+    }
+
+    void Init(const uint32_t spriteCount)
+    {
+        this->mTexture = NULL;
+
+        mSprintListView.Init(spriteCount);
+    }
 };
 
 class XSpriteManager
@@ -458,6 +563,7 @@ public:
     bool bBatching;
     void DrawBatch(eView* view);
     void AddParticle(eView* view, NGParticle* particleList, unsigned int numParticles);
+    void Init();
 };
 
 float flt_9C92F0 = 255.0f;
@@ -473,8 +579,6 @@ float flt_9C2888 = 0.5f;
 unsigned int randomSeed = 0xDEADBEEF;
 const char* TextureName = "MAIN";
 float EmitterDeltaTime = 0.0f;
-
-LPDIRECT3DDEVICE9 g_D3DDevice;
 
 struct fuelcell_emitter_mw
 {
@@ -2284,11 +2388,11 @@ void XSpriteManager::AddParticle(eView* view, NGParticle* particleList, unsigned
 
     sparkList.mSprintListView.vertex_buffer->Lock(
         0,
-        96 * sparkList.mMaxSprites,
+        96 * sparkList.mSprintListView.mMaxSprites,
         (void**)&sparkBuffer,
         D3DLOCK_DISCARD);
 
-    sparkList.mNumSprites = 0;
+    sparkList.mSprintListView.mNumPolys = 0;
 
     bBatching = true;
 
@@ -2300,18 +2404,18 @@ void XSpriteManager::AddParticle(eView* view, NGParticle* particleList, unsigned
         float y = particle->age * particle->vel.y + particle->initialPos.y;
         float z = particle->age * particle->vel.z + particle->initialPos.z + particle->age * particle->age * particle->gravity;
 
-        if (i < sparkList.mMaxSprites)
+        if (i < sparkList.mSprintListView.mMaxSprites)
         {
             XSpark *spark = &sparkBuffer[i];
 
-            sparkList.mNumSprites = i;
+            sparkList.mSprintListView.mNumPolys = i;
 
             if (spark)
             {
                 uint32_t color = particle->color;
 
-                if (bFadeOutParticles)
-                    ((uint8_t*)&color)[3] *= 1 - pow((particle->age / particle->life), 1.1f); // QOL feature
+                if (false && bFadeOutParticles)
+                    ((uint8_t*)&color)[3] = (uint8_t)(((uint8_t*)&color)[3] * (1 - (pow((particle->age / particle->life), 1.1f)))); // QOL feature
 
                 spark->v[0].position.x = x;
                 spark->v[0].position.y = y;
@@ -2387,154 +2491,12 @@ void DrawXenonEmitters(eView *view)
     gParticleList.GeneratePolys(view);
 }
 
-// RENDERER STUFF START
-void __declspec(naked) sub_743DF0()
+void XSpriteManager::Init()
 {
-    _asm
-    {
-        push    ebx
-        push    ebp
-        mov     ebp, ds:[GLOBAL_D3DDEVICE]
-        push    esi
-        mov     esi, ecx
-        push    edi
-        mov     edi, [esp + 14h]
-        xor eax, eax
-        push    eax // pSharedHandle
-        mov[esi + 10h], eax
-        mov[esi + 14h], eax
-        mov[esi + 18h], al
-        mov     ecx, [edi]
-        push    esi // ppVertexBuffer
-        push    eax // Pool
-        shl     ecx, 2
-        mov[esi + 8], ecx
-        mov     edx, [edi]
-        push    eax // FVF
-        mov[esi + 0Ch], edx
-        mov     eax, [edi]
-        mov     ecx, [ebp + 0]
-        add     eax, 3
-        lea     edx, [eax + eax * 2]
-        push    208h // Usage D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY
-        shl     edx, 5
-        push    edx // Length
-        push    ebp
-        call    dword ptr[ecx + 68h] // CreateVertexBuffer
-        mov     eax, [edi]
-        mov     ecx, [ebp + 0]
-        push    0 // pSharedHandle
-        lea     ebx, [esi + 4]
-        push    ebx // ppIndexBuffer
-        push    1 // Pool
-        push    65h // Format = D3DFMT_INDEX16
-        lea     edx, [eax + eax * 2]
-        push    8 // Usage = D3DUSAGE_WRITEONLY
-        shl     edx, 2
-        push    edx // Length
-        push    ebp
-        call    dword ptr[ecx + 6Ch] // CreateIndexBuffer
-        mov     ebx, [ebx]
-        mov     eax, [ebx]
-        xor ebp, ebp
-        push    ebp
-        lea     ecx, [esp + 18h]
-        push    ecx
-        push    ebp
-        push    ebp
-        push    ebx
-        call    dword ptr[eax + 2Ch]
-        test    eax, eax
-        jnz     loc_743ED3
-        cmp[edi], ebp
-        jbe     loc_743EBC
-        xor ecx, ecx
-        mov     eax, 6
-
-        loc_743E71:; CODE XREF : sub_743DF0 + CA↓j
-        mov     edx, [esp + 14h]
-        mov[eax + edx - 6], cx
-        mov     ebx, [esp + 14h]
-        lea     edx, [ecx + 1]
-        mov[eax + ebx - 4], dx
-        mov     ebx, [esp + 14h]
-        lea     edx, [ecx + 2]
-        mov[eax + ebx - 2], dx
-        mov     ebx, [esp + 14h]
-        mov[eax + ebx], cx
-        mov     ebx, [esp + 14h]
-        mov[eax + ebx + 2], dx
-        mov     ebx, [esp + 14h]
-        lea     edx, [ecx + 3]
-        mov[eax + ebx + 4], dx
-        mov     edx, [edi]
-        inc     ebp
-        add     eax, 0Ch
-        add     ecx, 4
-        cmp     ebp, edx
-        jb      loc_743E71
-
-        loc_743EBC : ; CODE XREF : sub_743DF0 + 78↑j
-        mov     eax, [esi + 4]
-        mov     ecx, [eax]
-        push    eax
-        call    dword ptr[ecx + 30h]
-        pop     edi
-        mov     dword ptr[esi + 1Ch], 0
-        pop     esi
-        pop     ebp
-        pop     ebx
-        retn    4
-
-        loc_743ED3:; CODE XREF : sub_743DF0 + 74↑j
-        pop     edi
-        mov[esi + 1Ch], ebp
-        pop     esi
-        pop     ebp
-        pop     ebx
-        retn    4
-    }
+    //g_D3DDevice = *(LPDIRECT3DDEVICE9*)0x982BDC;
+    sparkList.Init(MaxParticles);
+    NGSpriteManager.sparkList.mTexture = GetTextureInfo(bStringHash(TextureName), 0, 0);
 }
-
-void __declspec(naked) InitializeRenderObj()
-{
-    _asm
-    {
-        sub esp, 4
-        push    ecx
-        lea     eax, [esp]
-        push    eax
-        mov     ecx, offset NGSpriteManager
-        mov eax, MaxParticles
-        mov     dword ptr[esp + 4], eax
-        call    sub_743DF0
-        push    0
-        push    0
-        push    TextureName
-        call    bStringHash
-        add     esp, 4
-        push    eax
-        call    GetTextureInfo
-        mov     ecx, offset NGSpriteManager
-        add     ecx, 0x14
-        mov     [ecx], eax
-        mov ecx, ds:[GLOBAL_D3DDEVICE]
-        mov g_D3DDevice, ecx
-        xor al, al
-        add     esp, 14h
-        retn
-    }
-}
-
-//void __cdecl InitializeRenderObj()
-//{
-//    unsigned int v0; // eax
-//
-//    sub_743DF0();
-//    v0 = bStringHash((char*)TextureName);
-//    *(TextureInfo**)&NGSpriteManager_ClassData[20] = GetTextureInfo(v0, 0, 0);
-//    g_D3DDevice = *(LPDIRECT3DDEVICE9*)GLOBAL_D3DDEVICE;
-//}
 
 void __stdcall ReleaseRenderObj()
 {
@@ -2548,49 +2510,28 @@ void __stdcall ReleaseRenderObj()
 
 void XSpriteManager::DrawBatch(eView* view)
 {
-    //SpriteManager* sm = (SpriteManager*)NGSpriteManager_ClassData;
-    // init shader stuff here...
-    uint32_t CurrentShaderObj = CURRENTSHADER_OBJ_ADDR;
-    if (!bPassShadowMap)
-        *(uint32_t*)CURRENTSHADER_OBJ_ADDR = *(uint32_t*)WORLDPRELITSHADER_OBJ_ADDR;
-    LPD3DXEFFECT effect = *(LPD3DXEFFECT*)(*(uint32_t*)CurrentShaderObj + 0x48);
+    *(eEffect**)CURRENTSHADER_OBJ_ADDR = *(eEffect**)WORLDPRELITSHADER_OBJ_ADDR;
+    
+    eEffect& effect = **(eEffect**)CURRENTSHADER_OBJ_ADDR;
 
-    effect->Begin(NULL, 0);
+    effect.Start();
+    
+    effect.mEffectHandlePlat->Begin(NULL, 0);
     ParticleSetTransform((D3DXMATRIX*)0x00987AB0, view->EVIEW_ID);
-    effect->BeginPass(0);
-
+    effect.mEffectHandlePlat->BeginPass(0);
+    
     g_D3DDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
-    if (sparkList.mNumSprites && gParticleList.mNumParticles)
-    {
-        g_D3DDevice->SetStreamSource(0, sparkList.mSprintListView.vertex_buffer, 0, 0x18);
-        g_D3DDevice->SetIndices(sparkList.mSprintListView.index_buffer);
-
-        if (sparkList.mTexture)
-        {
-            if (bUseD3DDeviceTexture)
-            {
-                LPDIRECT3DBASETEXTURE9 texMain = sparkList.mTexture->PlatInfo->pD3DTexture;
-                g_D3DDevice->SetTexture(0, texMain);
-                g_D3DDevice->SetRenderState(D3DRS_ALPHAREF, (DWORD)0x000000B0);
-                g_D3DDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
-                g_D3DDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
-                g_D3DDevice->SetRenderState(D3DRS_ALPHAFUNC, D3DCMP_GREATER);
-                g_D3DDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
-                g_D3DDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_ONE);
-                g_D3DDevice->SetRenderState(D3DRS_COLORWRITEENABLE, D3DCOLORWRITEENABLE_RED | D3DCOLORWRITEENABLE_GREEN | D3DCOLORWRITEENABLE_BLUE);
-            }
-            else
-                GameSetTexture(sparkList.mTexture, 0);
-        }
-
-        effect->CommitChanges();
-
-        g_D3DDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, 4 * sparkList.mNumSprites, 0, 2 * sparkList.mNumSprites);
-    }
+    
+    sparkList.Draw(view->EVIEW_ID, 0, effect, NULL);
+    
     g_D3DDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
+    
+    effect.mEffectHandlePlat->EndPass();
+    effect.mEffectHandlePlat->End();
+    
+    effect.End();
 
-    effect->EndPass();
-    effect->End();
+    *(eEffect**)CURRENTSHADER_OBJ_ADDR = NULL;
 }
 
 void __stdcall EmitterSystem_Render_Hook(eView* view)
@@ -2611,7 +2552,8 @@ void __stdcall EmitterSystem_Render_Hook(eView* view)
 void __stdcall sub_6CFCE0_hook()
 {
     sub_6CFCE0();
-    InitializeRenderObj();
+    //InitializeRenderObj();
+    NGSpriteManager.Init();
 }
 
 // RENDERER STUFF END
@@ -2626,7 +2568,7 @@ bool InitXenonEffects()
 
 uint32_t sub_6DFAF0_hook()
 {
-    InitializeRenderObj();
+    NGSpriteManager.Init();//InitializeRenderObj();
     return sub_6DFAF0();
 }
 
