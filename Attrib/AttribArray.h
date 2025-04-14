@@ -3,6 +3,8 @@
 
 #include "AttribCore.h"
 
+#pragma warning(disable:4200)
+
 namespace Attrib
 {
 	class Array

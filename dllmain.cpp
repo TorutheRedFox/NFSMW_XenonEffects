@@ -59,9 +59,9 @@ uint32_t SparkFrameDelay = 1;
 class eEffect
 {
 public:
-    virtual void vecDTor();
-    virtual void Start();
-    virtual void End();
+    virtual void vecDTor() = 0;
+    virtual void Start() = 0;
+    virtual void End() = 0;
 private:
     uint8_t pad[0x44];
 public:
@@ -476,7 +476,7 @@ struct SpriteBuffer
     void Init(uint32_t spriteCount)
     {
         unsigned int v5; // ebp
-        int v6; // ecx
+        uint16_t v6; // ecx
         int v7; // eax
 
         uint16_t* idxBuf;
@@ -542,9 +542,11 @@ public:
     TextureInfo* mTexture;
     void Draw(int viewId, int viewBuffer, eEffect &effect, TextureInfo* pOverrideTexture)
     {
-        if (mSprintListView.mNumPolys)
+        (void)viewId; // not using this atm
+
+        if (viewBuffer >= 0 && mSprintListView.mNumPolys)
         {
-            mSprintListView.Draw(effect, this->mTexture);
+            mSprintListView.Draw(effect, pOverrideTexture ? pOverrideTexture : this->mTexture);
         }
     }
 
@@ -1130,7 +1132,7 @@ void __cdecl AddXenonEffect(
     }
 }
 
-void __declspec(naked) CalcCollisiontime(NGParticle* particle)
+void __declspec(naked) CalcCollisiontime()
 {
     _asm
     {
@@ -2414,7 +2416,7 @@ void XSpriteManager::AddParticle(eView* view, NGParticle* particleList, unsigned
             {
                 uint32_t color = particle->color;
 
-                if (false && bFadeOutParticles)
+                if (bFadeOutParticles)
                     ((uint8_t*)&color)[3] = (uint8_t)(((uint8_t*)&color)[3] * (1 - (pow((particle->age / particle->life), 1.1f)))); // QOL feature
 
                 spark->v[0].position.x = x;
@@ -2460,6 +2462,8 @@ void XSpriteManager::AddParticle(eView* view, NGParticle* particleList, unsigned
     sparkList.mSprintListView.vertex_buffer->Unlock();
 
     sparkBuffer = NULL;
+
+    (void)view; // silence
 }
 
 void ParticleList::GeneratePolys(eView* view)
@@ -2576,14 +2580,14 @@ uint32_t SparkFC = 0;
 void AddXenonEffect_Spark_Hook(void* piggyback_fx, void* spec, UMath::Matrix4* mat, UMath::Vector4* vel, float intensity)
 {
     if (!bLimitSparkRate)
-        return AddXenonEffect(piggyback_fx, spec, mat, vel, SparkIntensity);
+        return AddXenonEffect(piggyback_fx, spec, mat, vel, intensity * SparkIntensity);
 
     if ((SparkFC + SparkFrameDelay) <= eFrameCounter)
     {
         if (SparkFC != eFrameCounter)
         {
             SparkFC = eFrameCounter;
-            AddXenonEffect(piggyback_fx, spec, mat, vel, SparkIntensity);
+            AddXenonEffect(piggyback_fx, spec, mat, vel, intensity * SparkIntensity);
         }
     }
 }
@@ -2591,6 +2595,7 @@ void AddXenonEffect_Spark_Hook(void* piggyback_fx, void* spec, UMath::Matrix4* m
 uint32_t ContrailFC = 0;
 void AddXenonEffect_Contrail_Hook(void* piggyback_fx, void* spec, UMath::Matrix4* mat, UMath::Vector4* vel, float intensity)
 {
+    (void)intensity; // not using this
 #ifdef CONTRAIL_TEST
     // TEST CODE
     UMath::Vector4 newvel = { -40.6f, 29.3f, -2.3f, 0.0f };
@@ -2634,7 +2639,7 @@ void AddXenonEffect_Contrail_Hook(void* piggyback_fx, void* spec, UMath::Matrix4
 
     if (!bUseCGStyle)
     {
-        float carspeed = ((sqrtf((*vel).x * (*vel).x + (*vel).y * (*vel).y + (*vel).z * (*vel).z) - ContrailSpeed)) / ContrailSpeed;
+        float carspeed = (UMath::Length(*(UMath::Vector3*)vel) - ContrailSpeed) / ContrailSpeed;
         newintensity = UMath::Lerp(ContrailMinIntensity, ContrailMaxIntensity, carspeed);
         if (newintensity > ContrailMaxIntensity)
             newintensity = ContrailMaxIntensity;
@@ -2790,24 +2795,25 @@ loc_7E140C:
 
 void __stdcall CarRenderConn_UpdateContrails(void* CarRenderConn, void* PktCarService, float param)
 {
-    float* v3 = (float*)*((uint32_t*)CarRenderConn + 0xE);
-    float v4 = sqrt(*v3 * *v3 + v3[1] * v3[1] + v3[2] * v3[2]);
+    UMath::Vector3 velocity = **((UMath::Vector3**)CarRenderConn + 0xE);
+    float length = UMath::Length(velocity);
 
-    *((bool*)CarRenderConn + 0x400) = (
-        (v3 = (float*)*((uint32_t*)CarRenderConn + 0xE),
-        sqrt(*v3 * *v3 + v3[1] * v3[1] + v3[2] * v3[2]) >= ContrailSpeed)
-        );
+    bool &emitContrails = *((bool*)CarRenderConn + 0x400);
+
+    emitContrails = length >= ContrailSpeed;
 
     if (*((bool*)PktCarService + 0x71) && bUseCGStyle)
-        *((bool*)CarRenderConn + 0x400) = true;
+        emitContrails = true;
 
     if (*(uint32_t*)NISINSTANCE_ADDR && !bNISContrails)
-        *((bool*)CarRenderConn + 0x400) = false;
+        emitContrails = false;
 
     if (*(bool*)((uint32_t)(CarRenderConn)+0x400))
         *(float*)((uint32_t)(CarRenderConn) + 0x404) = *(float*)((uint32_t)(PktCarService)+0x6C);
     else
         *(float*)((uint32_t)(CarRenderConn)+0x404) = 0;
+
+    (void)param; // silence
 }
 
 void __stdcall CarRenderConn_UpdateEngineAnimation_Hook(float param, void* PktCarService)
