@@ -440,16 +440,18 @@ LPDIRECT3DDEVICE9 &g_D3DDevice = *(LPDIRECT3DDEVICE9*)0x982BDC;
 template <typename T, typename U>
 struct SpriteBuffer
 {
-    IDirect3DVertexBuffer9* vertex_buffer;
-    IDirect3DIndexBuffer9* index_buffer;
+    LPDIRECT3DVERTEXBUFFER9 mpVB;
+    LPDIRECT3DINDEXBUFFER9 mpIB;
     unsigned int mVertexCount;
     unsigned int mMaxSprites;
     unsigned int mNumPolys;
 
+    T* mLockedVB;
+
     void Draw(eEffect &effect, TextureInfo* pTexture)
     {
-        g_D3DDevice->SetStreamSource(0, vertex_buffer, 0, 0x18);
-        g_D3DDevice->SetIndices(index_buffer);
+        g_D3DDevice->SetStreamSource(0, mpVB, 0, sizeof(U));
+        g_D3DDevice->SetIndices(mpIB);
 
         if (pTexture)
         {
@@ -481,22 +483,22 @@ struct SpriteBuffer
 
         uint16_t* idxBuf;
 
-        vertex_buffer = NULL;
+        mpVB = NULL;
         mNumPolys = 0;
         mVertexCount = 4 * spriteCount;
         mMaxSprites = spriteCount;
-        g_D3DDevice->CreateVertexBuffer(96 * (spriteCount + 3), D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY, 0, D3DPOOL_DEFAULT, &vertex_buffer, 0);
+        g_D3DDevice->CreateVertexBuffer(sizeof(T) * (spriteCount + 3), D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY, 0, D3DPOOL_DEFAULT, &mpVB, 0);
         g_D3DDevice->CreateIndexBuffer(
             12 * spriteCount,
             D3DUSAGE_WRITEONLY,
             D3DFMT_INDEX16,
             D3DPOOL_MANAGED,
-            &index_buffer,
+            &mpIB,
             0);
         v5 = 0;
-        if (index_buffer->Lock(NULL, NULL, (void**)&idxBuf, NULL) != S_OK)
+        if (mpIB->Lock(NULL, NULL, (void**)&idxBuf, NULL) != S_OK)
         {
-            index_buffer = NULL;
+            mpIB = NULL;
         }
         else
         {
@@ -517,8 +519,33 @@ struct SpriteBuffer
                     v6 += 4;
                 } while (v5 < spriteCount);
             }
-            index_buffer->Unlock();
+            mpIB->Unlock();
         }
+    }
+
+    void Reset()
+    {
+         if (mpVB)
+             mpVB->Release();
+         if (mpIB)
+             mpIB->Release();
+    }
+
+    void Lock(size_t viewId)
+    {
+        mpVB->Lock(
+            0,
+            sizeof(T) * mMaxSprites,
+            (void**)&mLockedVB,
+            D3DLOCK_DISCARD);
+
+        mNumPolys = 0;
+    }
+
+    void Unlock(size_t viewId)
+    {
+        mpVB->Unlock();
+        mLockedVB = NULL;
     }
 };
 
@@ -534,19 +561,22 @@ struct XSpark
     XSparkVert v[4];
 };
 
-template <typename Sprite, typename SpriteVert>
+template <typename Sprite, typename SpriteVert, size_t NumViews>
 class XSpriteList
 {
 public:
-    SpriteBuffer<Sprite, SpriteVert> mSprintListView;
+    SpriteBuffer<Sprite, SpriteVert> mSprintListView[NumViews];
+    size_t mNumViews = NumViews;
+    size_t mCurrViewBuffer = 0;
     TextureInfo* mTexture;
+
     void Draw(int viewId, int viewBuffer, eEffect &effect, TextureInfo* pOverrideTexture)
     {
         (void)viewId; // not using this atm
 
-        if (viewBuffer >= 0 && mSprintListView.mNumPolys)
+        if (viewBuffer >= 0 && mSprintListView[viewBuffer].mNumPolys)
         {
-            mSprintListView.Draw(effect, pOverrideTexture ? pOverrideTexture : this->mTexture);
+            mSprintListView[viewBuffer].Draw(effect, pOverrideTexture ? pOverrideTexture : this->mTexture);
         }
     }
 
@@ -554,18 +584,52 @@ public:
     {
         this->mTexture = NULL;
 
-        mSprintListView.Init(spriteCount);
+        for (size_t i = 0; i < mNumViews; i++)
+        {
+            mSprintListView[i].Init(spriteCount);
+        }
+    }
+
+    void Reset()
+    {
+        for (size_t i = 0; i < mNumViews; i++)
+        {
+            mSprintListView[i].Reset();
+        }
+    }
+
+    void Lock(size_t viewId)
+    {
+        mSprintListView[viewId - 1].Lock(viewId);
+    }
+
+    void Unlock(size_t viewId)
+    {
+        mSprintListView[viewId - 1].Unlock(viewId);
     }
 };
 
 class XSpriteManager
 {
 public:
-    XSpriteList<XSpark, XSparkVert> sparkList;
+    // view count would be 2 with split screen, so if someone fixes it, revise it to work
+    XSpriteList<XSpark, XSparkVert, 1> sparkList; 
     bool bBatching;
+
     void DrawBatch(eView* view);
     void AddParticle(eView* view, NGParticle* particleList, unsigned int numParticles);
     void Init();
+    void Reset();
+
+    void Lock(size_t viewId)
+    {
+        sparkList.Lock(viewId);
+    }
+
+    void Unlock(size_t viewId)
+    {
+        sparkList.Unlock(viewId);
+    }
 };
 
 float flt_9C92F0 = 255.0f;
@@ -2386,15 +2450,7 @@ public:
 
 void XSpriteManager::AddParticle(eView* view, NGParticle* particleList, unsigned int numParticles)
 {
-    XSpark* sparkBuffer;
-
-    sparkList.mSprintListView.vertex_buffer->Lock(
-        0,
-        96 * sparkList.mSprintListView.mMaxSprites,
-        (void**)&sparkBuffer,
-        D3DLOCK_DISCARD);
-
-    sparkList.mSprintListView.mNumPolys = 0;
+    Lock(view->EVIEW_ID);
 
     bBatching = true;
 
@@ -2406,11 +2462,11 @@ void XSpriteManager::AddParticle(eView* view, NGParticle* particleList, unsigned
         float y = particle->age * particle->vel.y + particle->initialPos.y;
         float z = particle->age * particle->vel.z + particle->initialPos.z + particle->age * particle->age * particle->gravity;
 
-        if (i < sparkList.mSprintListView.mMaxSprites)
+        if (i < sparkList.mSprintListView[view->EVIEW_ID - 1].mMaxSprites)
         {
-            XSpark *spark = &sparkBuffer[i];
+            XSpark *spark = &sparkList.mSprintListView[view->EVIEW_ID - 1].mLockedVB[i];
 
-            sparkList.mSprintListView.mNumPolys = i;
+            sparkList.mSprintListView[view->EVIEW_ID - 1].mNumPolys = i;
 
             if (spark)
             {
@@ -2456,12 +2512,10 @@ void XSpriteManager::AddParticle(eView* view, NGParticle* particleList, unsigned
         }
     }
     
-    if (bBatching && sparkList.mSprintListView.vertex_buffer)
+    if (bBatching && sparkList.mSprintListView[view->EVIEW_ID - 1].mpVB)
         bBatching = false;
 
-    sparkList.mSprintListView.vertex_buffer->Unlock();
-
-    sparkBuffer = NULL;
+    Unlock(view->EVIEW_ID);
 
     (void)view; // silence
 }
@@ -2502,14 +2556,14 @@ void XSpriteManager::Init()
     NGSpriteManager.sparkList.mTexture = GetTextureInfo(bStringHash(TextureName), 0, 0);
 }
 
-void __stdcall ReleaseRenderObj()
+void XSpriteManager::Reset()
 {
-    //SpriteManager* sm = (SpriteManager*)NGSpriteManager_ClassData;
+    sparkList.Reset();
+}
 
-    if (NGSpriteManager.sparkList.mSprintListView.vertex_buffer)
-        NGSpriteManager.sparkList.mSprintListView.vertex_buffer->Release();
-    if (NGSpriteManager.sparkList.mSprintListView.vertex_buffer)
-        NGSpriteManager.sparkList.mSprintListView.vertex_buffer->Release();
+void ReleaseRenderObj()
+{
+    NGSpriteManager.Reset();
 }
 
 void XSpriteManager::DrawBatch(eView* view)
@@ -2549,7 +2603,7 @@ void __stdcall EmitterSystem_Render_Hook(eView* view)
         DrawXenonEmitters(view);
         NGSpriteManager.DrawBatch(view);
     }
-    //printf("VertexBuffer: 0x%X\n", vertex_buffer);
+    //printf("VertexBuffer: 0x%X\n", mpVB);
 }
 
 // D3D Reset Hook
