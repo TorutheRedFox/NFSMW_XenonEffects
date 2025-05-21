@@ -66,6 +66,21 @@ private:
     uint8_t pad[0x44];
 public:
     LPD3DXEFFECT mEffectHandlePlat;
+
+    inline static void SetAlphaTestState(DWORD AlphaTestEnable, DWORD AlphaRef)
+    {
+        ((void(*)(DWORD, DWORD))0x6C67C0)(AlphaTestEnable, AlphaRef);
+    };
+
+    inline static void SetAlphaBlendState(DWORD AlphaBlendEnable, D3DBLEND SrcBlend, D3DBLEND DestBlend)
+    {
+        ((void(*)(DWORD, D3DBLEND, D3DBLEND))0x6C6810)(AlphaBlendEnable, SrcBlend, DestBlend);
+    };
+
+    inline static void SetAlphaTestState()
+    {
+        ((void(*)())0x6C83A0)();
+    };
 };
 
 #define FRAMECOUNTER_ADDR 0x00982B78
@@ -341,43 +356,22 @@ void __fastcall Attrib_Instance_Dtor_Shim(void* _this)
 // TODO - replace this with proper Attrib bridge - TBD when fully decompiled
 namespace Attrib
 {
+    class CarbonInstance
+    {
+    public:
+        Attrib::Collection* mCollection;
+        void* mLayoutPtr;
+        unsigned int mMsgPort;
+        unsigned int mFlags;
+
+        ~CarbonInstance()
+        {
+            //Attrib_Instance_Dtor_Shim(this);
+        }
+    };
+
     namespace Gen
     {
-        struct HashMap
-        {
-            void* mTable;
-            unsigned __int32 mTableSize;
-            unsigned __int32 mNumEntries;
-            unsigned __int16 mWorstCollision;
-            unsigned __int16 mKeyShift;
-        };
-
-        struct Collection
-        {
-            Attrib::HashMap mTable;
-            void* mParent;
-            void* mClass;
-            void* mLayout;
-            unsigned int mRefCount;
-            unsigned int mKey;
-            void* mSource;
-            const char* mNamePtr;
-        };
-
-        class CarbonInstance
-        {
-        public:
-            Attrib::Collection* mCollection;
-            void* mLayoutPtr;
-            unsigned int mMsgPort;
-            unsigned int mFlags;
-        
-            ~CarbonInstance()
-            {
-                Attrib_Instance_Dtor_Shim(this);
-            }
-        };
-
         struct RefSpec
         {
             uint32_t mClassKey;
@@ -385,7 +379,7 @@ namespace Attrib
             Attrib::Collection* mCollectionPtr;
         };
 
-        class fuelcell_effect : CarbonInstance
+        class fuelcell_effect : public CarbonInstance
         {
         public:
             struct _LayoutStruct
@@ -394,7 +388,7 @@ namespace Attrib
             };
         };
 
-        class fuelcell_emitter : CarbonInstance
+        class fuelcell_emitter : public CarbonInstance
         {
         public:
             struct _LayoutStruct
@@ -421,7 +415,7 @@ namespace Attrib
             };
         };
 
-        class emitteruv : CarbonInstance
+        class emitteruv : public CarbonInstance
         {
         public:
             struct _LayoutStruct
@@ -471,6 +465,8 @@ struct SpriteBuffer
         }
 
         effect.mEffectHandlePlat->CommitChanges();
+
+        g_D3DDevice->SetRenderState(D3DRS_STENCILENABLE, FALSE);
 
         g_D3DDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, 4 * mNumPolys, 0, 2 * mNumPolys);
     }
@@ -644,7 +640,7 @@ float flt_9C2A3C = 4.0f;
 float flt_9C2888 = 0.5f;
 unsigned int randomSeed = 0xDEADBEEF;
 const char* TextureName = "MAIN";
-float EmitterDeltaTime = 0.0f;
+float gFrameDT = 0.0f;
 
 struct fuelcell_emitter_mw
 {
@@ -1906,10 +1902,9 @@ struct CGEmitter
     UMath::Matrix4 mLocalWorld;
 };
 
-
 //void __fastcall CGEmitter_SpawnParticles(CGEmitter* _this, int dummy, float dt, float intensity, bool isContrail)
 //{
-//    Attrib::Gen::fuelcell_emitter::_LayoutStruct* mLayoutPtr; // esi
+//    float* mLayoutPtr; // esi
 //    int v6; // edi
 //    int v7; // ebx
 //    int v8; // eax
@@ -1924,28 +1919,28 @@ struct CGEmitter
 //    char* v17; // eax
 //    char* v18; // eax
 //    char v19; // cl
-//    int zDebrisType; // eax
+//    int v20; // eax
 //    NGParticle* v21; // esi
-//    Attrib::Gen::fuelcell_emitter::_LayoutStruct* v22; // eax
-//    float LengthDelta; // edx
+//    float* v22; // eax
+//    float v23; // edx
 //    double v24; // st7
 //    double v25; // st7
-//    Attrib::Gen::fuelcell_emitter::_LayoutStruct* v26; // edi
+//    float* v26; // edi
 //    double v27; // st7
 //    double v28; // st7
-//    Attrib::Gen::fuelcell_emitter::_LayoutStruct* v29; // edi
+//    float* v29; // edi
 //    double v30; // st7
 //    double v31; // st7
-//    Attrib::Gen::fuelcell_emitter::_LayoutStruct* v32; // edi
+//    float* v32; // edi
 //    double v33; // st7
-//    Attrib::Gen::fuelcell_emitter::_LayoutStruct* v34; // edi
+//    float* v34; // edi
 //    double v35; // st7
 //    double v36; // st6
-//    Attrib::Gen::fuelcell_emitter::_LayoutStruct* v37; // edi
+//    float* v37; // edi
 //    double v38; // st7
-//    Attrib::Gen::fuelcell_emitter::_LayoutStruct* v39; // edi
+//    float* v39; // edi
 //    double v40; // st7
-//    Attrib::Gen::fuelcell_emitter::_LayoutStruct* v41; // edi
+//    float* v41; // edi
 //    float v42; // eax
 //    float v43; // ecx
 //    double v44; // st7
@@ -1965,16 +1960,16 @@ struct CGEmitter
 //    NGParticle::Flags flags; // al
 //    float v59; // [esp-54h] [ebp-100h]
 //    float v60; // [esp-4Ch] [ebp-F8h]
-//    float GravityDelta; // [esp-3Ch] [ebp-E8h]
-//    UMath::Vector4* p_VelocityDelta; // [esp-34h] [ebp-E0h]
-//    float z; // [esp-28h] [ebp-D4h]
-//    float y; // [esp-20h] [ebp-CCh]
+//    float v61; // [esp-3Ch] [ebp-E8h]
+//    float* v62; // [esp-34h] [ebp-E0h]
+//    float v63; // [esp-28h] [ebp-D4h]
+//    float v64; // [esp-20h] [ebp-CCh]
 //    unsigned int v65; // [esp+0h] [ebp-ACh] BYREF
 //    float v66; // [esp+4h] [ebp-A8h]
 //    char v67; // [esp+9h] [ebp-A3h]
 //    unsigned __int8 v68; // [esp+Ah] [ebp-A2h]
 //    char v69; // [esp+Bh] [ebp-A1h]
-//    float LengthStart; // [esp+Ch] [ebp-A0h]
+//    float v70; // [esp+Ch] [ebp-A0h]
 //    float v71; // [esp+10h] [ebp-9Ch]
 //    int v72; // [esp+14h] [ebp-98h]
 //    float v73; // [esp+18h] [ebp-94h]
@@ -1986,7 +1981,7 @@ struct CGEmitter
 //    float v79; // [esp+30h] [ebp-7Ch] BYREF
 //    float v80; // [esp+34h] [ebp-78h]
 //    float v81; // [esp+38h] [ebp-74h]
-//    int v82; // [esp+3Ch] [ebp-70h]
+//    float v82; // [esp+3Ch] [ebp-70h]
 //    int v83; // [esp+40h] [ebp-6Ch]
 //    float v84; // [esp+44h] [ebp-68h]
 //    float v85; // [esp+48h] [ebp-64h]
@@ -1998,14 +1993,15 @@ struct CGEmitter
 //
 //    if (intensity > (double)flt_9C248C && dt > (double)flt_9C248C)
 //    {
-//        memcpy(v90, &_this->mVel.w, sizeof(v90));
-//        mLayoutPtr = _this->mEmitterDef.mLayoutPtr;
+//        memcpy(v90, &_this->mLocalWorld, sizeof(v90));
+//        mLayoutPtr = (float*)_this->mEmitterDef.mLayoutPtr;
+//        Attrib::Gen::fuelcell_emitter::_LayoutStruct* emitterThing = (Attrib::Gen::fuelcell_emitter::_LayoutStruct *)_this->mEmitterDef.mLayoutPtr;
 //        v65 = randomSeed;
-//        v78 = mLayoutPtr->Life - mLayoutPtr->Life * mLayoutPtr->LifeVariance;
-//        v6 = (int)(mLayoutPtr->Colour1.x * flt_9C92F0);
-//        v7 =  (int)(mLayoutPtr->Colour1.y * flt_9C92F0);
-//        v8 =  (int)(mLayoutPtr->Colour1.z * flt_9C92F0);
-//        v9 = mLayoutPtr->Colour1.w * flt_9C92F0;
+//        v78 = mLayoutPtr[27] - mLayoutPtr[27] * mLayoutPtr[35];
+//        v6 = (int)(mLayoutPtr[20] * flt_9C92F0);
+//        v7 = (int)(mLayoutPtr[21] * flt_9C92F0);
+//        v8 = (int)(mLayoutPtr[22] * flt_9C92F0);
+//        v9 = mLayoutPtr[23] * flt_9C92F0;
 //        v72 = v8;
 //        v10 = (int)(v9);
 //        if (intensity != flt_9C2478)
@@ -2013,39 +2009,39 @@ struct CGEmitter
 //            v11 = intensity * flt_9EA540;
 //            if (flt_9EA540 < v11)
 //                v11 = flt_9EA540;
-//            v10 = (int)v11;
+//            v10 = (int)(v10, v11);
 //        }
 //        v83 = v72 | ((v7 | ((v6 | (v10 << 8)) << 8)) << 8);
 //        if (intensity <= (double)flt_9C2478)
 //            v12 = flt_9C2478;
 //        else
 //            v12 = intensity;
-//        v13 = v12 * _this->mEmitterDef.mLayoutPtr->NumParticles * _this->mEmitterDef.mLayoutPtr->NumParticlesVariance;
+//        v13 = v12 * *((float*)_this->mEmitterDef.mLayoutPtr + 36) * *((float*)_this->mEmitterDef.mLayoutPtr + 28);
 //        if (intensity <= (double)flt_9C2478)
 //            v14 = flt_9C2478;
 //        else
 //            v14 = intensity;
 //        v15 = 0;
-//        v71 = v14 * _this->mEmitterDef.mLayoutPtr->NumParticles - v13 * flt_9C2C44;
-//        AttributePointer_Shim = (char*)Attrib_Instance_GetAttributePointer_Shim(0x28638D89u, 0);
+//        v71 = v14 * *((float*)_this->mEmitterDef.mLayoutPtr + 36) - v13 * flt_9C2C44;
+//        AttributePointer_Shim = ((char* (__thiscall*)(Attrib::CarbonInstance*, int, int))Attrib_Instance_GetAttributePointer_Shim)(&_this->mEmitterDef, 0x28638D89u, 0);
 //        if (!AttributePointer_Shim)
-//            AttributePointer_Shim = (char*)Attrib_DefaultDataArea(1u);
+//            AttributePointer_Shim = (char*)Attrib::DefaultDataArea();
 //        v68 = *AttributePointer_Shim;
-//        v17 = (char*)Attrib_Instance_GetAttributePointer_Shim(0xD2603865, 0);
+//        v17 = ((char* (__thiscall*)(Attrib::CarbonInstance*, int, int))Attrib_Instance_GetAttributePointer_Shim)(&_this->mEmitterDef, 0xD2603865, 0);
 //        if (!v17)
-//            v17 = (char*)Attrib_DefaultDataArea(1u);
+//            v17 = (char*)Attrib::DefaultDataArea();
 //        v67 = *v17;
-//        v18 = (char*)Attrib_Instance_GetAttributePointer_Shim(0xE2CC8106, 0);
+//        v18 = ((char*(__thiscall*)(Attrib::CarbonInstance*, int, int))Attrib_Instance_GetAttributePointer_Shim)(&_this->mEmitterDef, 0xE2CC8106, 0);
 //        if (!v18)
-//            v18 = (char*)Attrib_DefaultDataArea(1u);
+//            v18 = (char*)Attrib::DefaultDataArea();
 //        v19 = *v18;
-//        zDebrisType = _this->mEmitterDef.mLayoutPtr->zDebrisType;
+//        v20 = *((unsigned __int8*)_this->mEmitterDef.mLayoutPtr + 148);
 //        v69 = v19;
-//        v72 = zDebrisType;
-//        if (zDebrisType)
+//        v72 = v20;
+//        if (v20)
 //        {
 //            v15 = 1;
-//            v72 = zDebrisType - 1;
+//            v72 = v20 - 1;
 //        }
 //        v66 = 0.0;
 //        v85 = dt / v71;
@@ -2057,56 +2053,56 @@ struct CGEmitter
 //            v21 = &gParticleList.mParticles[gParticleList.mNumParticles++];
 //            if (!v21)
 //                break;
-//            v22 = _this->mEmitterDef.mLayoutPtr;
-//            LengthDelta = v22->LengthDelta;
-//            LengthStart = v22->LengthStart;
-//            v84 = LengthDelta;
-//            v24 = bRandom_Float_Int(LengthDelta, (int)&v65);
-//            v25 = v24 + LengthStart;
-//            LengthStart = v25;
+//            v22 = (float*)_this->mEmitterDef.mLayoutPtr;
+//            v23 = v22[34];
+//            v70 = v22[33];
+//            v84 = v23;
+//            v24 = bRandom_Float_Int(v23, (int)&v65);
+//            v25 = v24 + v70;
+//            v70 = v25;
 //            if (v25 < flt_9C248C)
 //                break;
-//            if (LengthStart >= (double)flt_9C92F0)
-//                LengthStart = 255.0;
-//            v26 = _this->mEmitterDef.mLayoutPtr;
-//            v27 = bRandom_Float_Int(v26->VolumeCenter.x, (int)&v65);
-//            v28 = v26->VolumeCenter.x - (v27 + v27);
-//            v29 = _this->mEmitterDef.mLayoutPtr;
-//            y = v29->VolumeCenter.y;
+//            if (v70 >= (double)flt_9C92F0)
+//                v70 = 255.0;
+//            v26 = (float*)_this->mEmitterDef.mLayoutPtr;
+//            v27 = bRandom_Float_Int(v26[4], (int)&v65);
+//            v28 = v26[4] - (v27 + v27);
+//            v29 = (float*)_this->mEmitterDef.mLayoutPtr;
+//            v64 = v29[5];
 //            v86 = flt_9C2478 - v28;
-//            v30 = bRandom_Float_Int(y, (int)&v65);
-//            v31 = v29->VolumeCenter.y - (v30 + v30);
-//            v32 = _this->mEmitterDef.mLayoutPtr;
-//            z = v32->VolumeCenter.z;
+//            v30 = bRandom_Float_Int(v64, (int)&v65);
+//            v31 = v29[5] - (v30 + v30);
+//            v32 = (float*)_this->mEmitterDef.mLayoutPtr;
+//            v63 = v32[6];
 //            v87 = flt_9C2478 - v31;
-//            v33 = bRandom_Float_Int(z, (int)&v65);
-//            p_VelocityDelta = &_this->mEmitterDef.mLayoutPtr->VelocityDelta;
-//            v88 = flt_9C2478 - (v32->VolumeCenter.z - (v33 + v33));
-//            v73 = p_VelocityDelta[-1].x * *(float*)&_this->mTextureUVs.mFlags;
-//            v74 = p_VelocityDelta[-1].y * _this->mVel.x;
-//            v75 = p_VelocityDelta[-1].z * _this->mVel.y;
-//            ((void(__cdecl*)(UMath::Vector4*, float*, float*))sub_478200)(p_VelocityDelta, &_this->mVel.w, v89);
-//            v34 = _this->mEmitterDef.mLayoutPtr;
-//            GravityDelta = v34->GravityDelta;
+//            v33 = bRandom_Float_Int(v63, (int)&v65);
+//            v62 = (float*)((char*)_this->mEmitterDef.mLayoutPtr + 64);
+//            v88 = flt_9C2478 - (v32[6] - (v33 + v33));
+//            v73 = *(v62 - 4) * _this->mVel.x;
+//            v74 = *(v62 - 3) * _this->mVel.y;
+//            v75 = *(v62 - 2) * _this->mVel.z;
+//            ((void(__cdecl*)(float*, UMath::Matrix4*, float*))sub_478200)(v62, &_this->mLocalWorld, v89);
+//            v34 = (float*)_this->mEmitterDef.mLayoutPtr;
+//            v61 = v34[31];
 //            v75 = v89[2] + v75;
 //            v76 = v89[3] + v76;
 //            v73 = (v89[0] + v73) * v86;
 //            v74 = (v89[1] + v74) * v87;
 //            v75 = v75 * v88;
-//            v35 = bRandom_Float_Int(GravityDelta, (int)&v65);
-//            v36 = v34->GravityStart - v34->GravityDelta;
-//            v37 = _this->mEmitterDef.mLayoutPtr;
+//            v35 = bRandom_Float_Int(v61, (int)&v65);
+//            v36 = v34[29] - v34[31];
+//            v37 = (float*)_this->mEmitterDef.mLayoutPtr;
 //            v77 = v35 + v35 + v36;
-//            v38 = bRandom_Float_Int(v37->VelocityStart.x, (int)&v65) - v37->VelocityStart.x * flt_9C2888 + v37->VolumeExtent.x;
-//            v39 = _this->mEmitterDef.mLayoutPtr;
-//            v60 = v39->VelocityStart.y;
+//            v38 = bRandom_Float_Int(v37[8], (int)&v65) - v37[8] * flt_9C2888 + *v37;
+//            v39 = (float*)_this->mEmitterDef.mLayoutPtr;
+//            v60 = v39[9];
 //            v79 = v38;
-//            v40 = bRandom_Float_Int(v60, (int)&v65) - v39->VelocityStart.y * flt_9C2888 + v39->VolumeExtent.y;
-//            v41 = _this->mEmitterDef.mLayoutPtr;
-//            v59 = v41->VelocityStart.z;
+//            v40 = bRandom_Float_Int(v60, (int)&v65) - v39[9] * flt_9C2888 + v39[1];
+//            v41 = (float*)_this->mEmitterDef.mLayoutPtr;
+//            v59 = v41[10];
 //            v80 = v40;
-//            v81 = bRandom_Float_Int(v59, (int)&v65) - v41->VelocityStart.z * flt_9C2888 + v41->VolumeExtent.z;
-//            v82 = 1065353216;
+//            v81 = bRandom_Float_Int(v59, (int)&v65) - v41[10] * flt_9C2888 + v41[2];
+//            v82 = 1.0;
 //            ((void(__cdecl*)(float*, char*, float*))sub_6012B0)(&v79, v90, &v79);
 //            v42 = v74;
 //            v43 = v75;
@@ -2127,17 +2123,17 @@ struct CGEmitter
 //            v21->initialPos.y = v50;
 //            v21->gravity = v49;
 //            v21->initialPos.z = v77 * v66 * v66 + v75 * v66 + v81;
-//            v21->elasticity = (int)((Attrib::Gen::fuelcell_emitter::_LayoutStruct*)_this->mEmitterDef.mLayoutPtr)->Elasticity;
-//            v51 = (int)((Attrib::Gen::fuelcell_emitter::_LayoutStruct*)_this->mEmitterDef.mLayoutPtr)->HeightStart;
+//            v21->elasticity = (int)(*((float*)_this->mEmitterDef.mLayoutPtr + 32));
+//            v51 = (int)(*((float*)_this->mEmitterDef.mLayoutPtr + 30));
 //            v52 = v83;
 //            v21->size = v51;
 //            v21->color = v52;
-//            v21->flags = v15;
+//            v21->flags = (NGParticle::Flags)v15;
 //            if ((v15 & 1) != 0)
 //            {
 //                v21->uv[0] = v72;
-//                v21->uv[1] = ((int(__usercall*)@<eax>(double@<st0>))__ftol2)(*(float*)&this->mTextureUVs.mCollection->mTable.mTableSize);
-//                v21->uv[2] = ((int(__usercall*)@<eax>(double@<st0>))__ftol2)(*(float*)&this->mTextureUVs.mCollection->mTable.mWorstCollision);
+//                v21->uv[1] = (int)(*((float*)_this->mTextureUVs.mLayoutPtr + 1));
+//                v21->uv[2] = (int)(*((float*)_this->mTextureUVs.mLayoutPtr + 3));
 //                v21->startX = bRandom_Int_Int(255, &v65);
 //                v21->startY = bRandom_Int_Int(255, &v65);
 //                v53 = bRandom_Int_Int(255, &v65);
@@ -2150,20 +2146,21 @@ struct CGEmitter
 //            }
 //            else
 //            {
-//                v21->uv[0] = ((int(__usercall*)@<eax>(double@<st0>))__ftol2)(*(float*)&this->mTextureUVs.mCollection->mTable.mTableSize * flt_9C92F0);
-//                v21->uv[1] = ((int(__usercall*)@<eax>(double@<st0>))__ftol2)(*(float*)&this->mTextureUVs.mCollection->mTable.mWorstCollision * flt_9C92F0);
-//                v21->uv[2] = ((int(__usercall*)@<eax>(double@<st0>))__ftol2)(*(float*)&this->mTextureUVs.mCollection->mTable.mNumEntries * flt_9C92F0);
-//                v56 = ((int(__usercall*)@<eax>(double@<st0>))__ftol2)(*(float*)&this->mTextureUVs.mCollection->mTable.mTable * flt_9C92F0);
-//                v57 = LengthStart;
+//                v21->uv[0] = (int)(*((float*)_this->mTextureUVs.mLayoutPtr + 1) * flt_9C92F0);
+//                v21->uv[1] = (int)(*((float*)_this->mTextureUVs.mLayoutPtr + 3) * flt_9C92F0);
+//                v21->uv[2] = (int)(*((float*)_this->mTextureUVs.mLayoutPtr + 2) * flt_9C92F0);
+//                v56 = (int)(*(float*)_this->mTextureUVs.mLayoutPtr * flt_9C92F0);
+//                v57 = v70;
 //                v21->uv[3] = v56;
-//                v21->startX = ((int(__usercall*)@<eax>(double@<st0>))__ftol2)(v57);
+//                v21->startX = (int)(v57);
 //            }
 //            flags = v21->flags;
 //            v66 = v66 + v85;
-//            if ((flags & 4) == 0 && !isContrail)
-//                CalcCollisiontime_abstract(v21);
+//            //if ((flags & 4) == 0 && !isContrail)
+//            //    CalcCollisiontime(v21);
 //        }
 //        randomSeed = v65;
+//    }
 //}
 
 void __declspec(naked) Attrib_Gen_fuelcell_emitter_constructor()
@@ -2533,18 +2530,18 @@ void DrawXenonEmitters(eView *view)
     //NGEffect effect; // [esp-4h] [ebp-84h]
     XenonEffectDef effectDef; // [esp+20h] [ebp-60h] BYREF
 
-    gParticleList.AgeParticles(EmitterDeltaTime);
+    gParticleList.AgeParticles(gFrameDT);
     mpBegin = gNGEffectList.mpBegin;
     for (i = gNGEffectList.mpEnd; mpBegin != i; ++mpBegin)
     {
         memcpy(&effectDef, mpBegin, sizeof(effectDef));
         if (!effectDef.piggyback_effect || (*((uint32_t*)effectDef.piggyback_effect + 6) & 0x10) != 0)
         {
-            NGEffect effect{ &effectDef, EmitterDeltaTime };
+            NGEffect effect{ &effectDef, gFrameDT };
             i = gNGEffectList.mpEnd;
         }
     }
-    EmitterDeltaTime = 0.0f;
+    gFrameDT = 0.0f;
     eastl_vector_erase_XenonEffectDef_Abstract(&gNGEffectList, gNGEffectList.mpBegin, gNGEffectList.mpEnd);
     gParticleList.GeneratePolys(view);
 }
@@ -2610,7 +2607,6 @@ void __stdcall EmitterSystem_Render_Hook(eView* view)
 void __stdcall sub_6CFCE0_hook()
 {
     sub_6CFCE0();
-    //InitializeRenderObj();
     NGSpriteManager.Init();
 }
 
@@ -2713,13 +2709,17 @@ void AddXenonEffect_Contrail_Hook(void* piggyback_fx, void* spec, UMath::Matrix4
 #endif
 }
 
+void UpdateXenonEmitters(float dt)
+{
+    gFrameDT = dt;
+}
 
 void __stdcall EmitterSystem_Update_Hook(float dt)
 {
     uint32_t that;
     _asm mov that, ecx
     EmitterSystem_UpdateParticles((void*)that, dt);
-    EmitterDeltaTime = dt;
+    UpdateXenonEmitters(dt);
 }
 
 uint32_t RescueESI = 0;

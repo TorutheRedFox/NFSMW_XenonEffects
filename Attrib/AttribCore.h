@@ -27,7 +27,7 @@ namespace Attrib
 		Collection *mCollectionPtr;
 	};
 	
-	inline void Mix32_1(uint32_t &a, uint32_t &b, uint32_t &c)
+	inline constexpr void Mix32_1(uint32_t &a, uint32_t &b, uint32_t &c)
 	{
 		a = c >> 13 ^ (a - b - c);
 		b = a << 8 ^ (b - c - a);
