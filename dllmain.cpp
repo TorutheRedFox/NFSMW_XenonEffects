@@ -609,7 +609,7 @@ class XSpriteManager
 {
 public:
     XSpriteList<XSpark, XSparkVert, 2> sparkList; 
-    bool bBatching;
+    bool bBatching = false;
 
     void DrawBatch(eView* view);
     void AddParticle(eView* view, NGParticle* particleList, unsigned int numParticles);
