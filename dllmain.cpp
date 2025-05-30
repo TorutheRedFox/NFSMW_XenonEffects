@@ -608,8 +608,7 @@ public:
 class XSpriteManager
 {
 public:
-    // view count would be 2 with split screen, so if someone fixes it, revise it to work
-    XSpriteList<XSpark, XSparkVert, 1> sparkList; 
+    XSpriteList<XSpark, XSparkVert, 2> sparkList; 
     bool bBatching;
 
     void DrawBatch(eView* view);
