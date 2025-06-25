@@ -232,12 +232,14 @@ namespace UMath
         Vector4 v2;
         Vector4 v3;
 
-        inline Matrix4 operator=(const Matrix4& b)
+        inline Matrix4& operator=(const Matrix4& b)
         {
             this->v0 = b.v0;
             this->v1 = b.v1;
             this->v2 = b.v2;
             this->v3 = b.v3;
+
+            return *this;
         }
         // TODO - do matrix math
     };
