@@ -25,6 +25,11 @@ namespace Attrib
 		uint32_t mClassKey;
 		uint32_t mCollectionKey;
 		Collection *mCollectionPtr;
+
+		Collection* GetCollection()
+		{
+			return ((Collection* (__thiscall*)(RefSpec*))0x4560D0)(this);
+		}
 	};
 	
 	inline constexpr void Mix32_1(uint32_t &a, uint32_t &b, uint32_t &c)
