@@ -183,8 +183,8 @@ void* (__thiscall* Attrib_RefSpec_GetCollection)(void* Attrib) = (void* (__thisc
 void* (__thiscall* Attrib_Instance_Dtor)(void* AttribInstance) = (void* (__thiscall*)(void*))0x0045A430;
 void* (__thiscall* Attrib_Instance_Refspec)(void* AttribCollection, void* refspec, unsigned int unk, void* ucomlist) = (void* (__thiscall*)(void*, void*, unsigned int, void*))0x00456CB0;
 void* (__cdecl* Attrib_FindCollection)(uint32_t param1, uint32_t param2) = (void* (__cdecl*)(uint32_t, uint32_t))0x00455FD0;
-float (__cdecl* bRandom_Float_Int)(float range, int unk) = (float (__cdecl*)(float, int))0x0045D9E0;
-int(__cdecl* bRandom_Int_Int)(int range, uint32_t* unk) = (int(__cdecl*)(int, uint32_t*))0x0045D9A0;
+float (__cdecl* bRandom_Float_Int)(float range, unsigned int * seed) = (float (__cdecl*)(float, unsigned int*))0x0045D9E0;
+int(__cdecl* bRandom_Int_Int)(int range, unsigned int* seed) = (int(__cdecl*)(int, unsigned int*))0x0045D9A0;
 unsigned int(__cdecl* bStringHash)(const char* str) = (unsigned int(__cdecl*)(const char*))0x00460BF0;
 TextureInfo*(__cdecl* GetTextureInfo)(unsigned int name_hash, int return_default_texture_if_not_found, int include_unloaded_textures) = (TextureInfo*(__cdecl*)(unsigned int, int, int))0x00503400;
 void (__thiscall* EmitterSystem_UpdateParticles)(void* EmitterSystem, float dt) = (void (__thiscall*)(void*, float))0x00508C30;
@@ -1330,13 +1330,15 @@ bool BounceParticle(NGParticle* particle)
     if (!bBounceParticles)
         return true;
 
+    return true;
+
     float life;
     float gravity;
     float gravityOverTime;
     float velocityMagnitude;
     UMath::Vector3 newVelocity = particle->vel;
     
-    life = particle->life; // / 8191.0f; // MW multiplies life by 8191 when spawning the particle, but Carbon does not as it uses a float
+    life = particle->life / 8191.0f; // MW multiplies life by 8191 when spawning the particle, but Carbon does not as it uses a float
     gravity = particle->gravity;
     
     gravityOverTime = particle->gravity * life;
@@ -1376,21 +1378,22 @@ bool BounceParticle(NGParticle* particle)
 void ParticleList::AgeParticles(float dt)
 {
     size_t aliveCount = 0;
+
     for (size_t i = 0; i <mNumParticles; i++)
     {
         NGParticle& particle = mParticles[i];
-        if ((particle.age + dt) <= particle.life)
+        if ((particle.age + dt) <= particle.life / 8191.0f)
         {
             memcpy(&mParticles[aliveCount], &mParticles[i], sizeof(NGParticle));
             mParticles[aliveCount].age += dt;
             aliveCount++;
         }
-        else if (particle.flags & NGParticle::Flags::SPAWN)
-        {
-            //particle.remainingLife -= particle.age + dt;
-            BounceParticle(&particle);
-            aliveCount++;
-        }
+        //else if (particle.flags & NGParticle::Flags::SPAWN)
+        //{
+        //    //particle.remainingLife -= particle.age + dt;
+        //    BounceParticle(&particle);
+        //    aliveCount++;
+        //}
     }
     mNumParticles = aliveCount;
 }
@@ -1910,6 +1913,32 @@ CGEmitter::CGEmitter(Attrib::Collection* spec, XenonEffectDef* eDef) :
     mVel = eDef->vel;
 };
 
+// for reference
+// class NGParticle
+// {
+// public:
+// 
+//     enum Flags : uint8_t
+//     {
+//         DEBRIS = 1 << 0,
+//         SPAWN = 1 << 1,
+//         BOUNCED = 1 << 2,
+//     };
+// 
+//     UMath::Vector3 initialPos;
+//     unsigned int color;
+//     UMath::Vector3 vel;
+//     float gravity;
+//     UMath::Vector3 impactNormal;
+//     __declspec(align(16)) uint16_t flags;
+//     uint16_t size;
+//     uint16_t life;
+//     char length;
+//     char width;
+//     char uv[4];
+//     float age;
+// };
+
 void CGEmitter::SpawnParticles(float dt, float intensity, bool isContrail)
 {
     if (intensity <= 0.0f)
@@ -1918,7 +1947,7 @@ void CGEmitter::SpawnParticles(float dt, float intensity, bool isContrail)
     // Local variables
     struct UMath::Matrix4 local_world; // r1+0x8
     struct UMath::Matrix4 local_orientation; // r1+0x48
-    unsigned int random_seed = 0xDEADBEEF; // r1+0xC8
+    unsigned int random_seed = randomSeed; // r1+0xC8
     float life_variance = mEmitterDef.Life() * mEmitterDef.LifeVariance(); // f0
     float life = mEmitterDef.Life() - life_variance; // f23
     int r = (int)(mEmitterDef.Colour1().x * 255.0f); // r7
@@ -1928,11 +1957,13 @@ void CGEmitter::SpawnParticles(float dt, float intensity, bool isContrail)
     unsigned int particleColor = ((int)a << 24) | (int)r | ((int)g << 8) | ((int)b << 16); // r26
     float num_particles_variance = mEmitterDef.NumParticles() * mEmitterDef.NumParticlesVariance() * 100.0f; // f0
     float num_particles = mEmitterDef.NumParticles() - num_particles_variance; // f29
-    float particle_age_factor; // f22
-    float current_particle_age; // f27
+    float particle_age_factor = dt / num_particles; // f22
+    float current_particle_age = 0.0f; // f27
     
-    for (float i = dt / num_particles; num_particles != 0.0f; i++)
+    while (num_particles != 0.0f)
     {
+        num_particles -= 1.0f;
+
         NGParticle* particle;
         float sparkLength; // f30
         float ld;
@@ -1945,10 +1976,49 @@ void CGEmitter::SpawnParticles(float dt, float intensity, bool isContrail)
         if (!(particle = gParticleList.GetNextParticle())) // get next particle in list
             break;
 
-        particle->age = 0;
+        particle->age = current_particle_age;
+
+        gravity = (bRandom_Float_Int(mEmitterDef.GravityDelta(), &random_seed) * 2) + mEmitterDef.GravityStart() + mEmitterDef.GravityDelta();
+        particle->gravity = gravity;
+
+        particle->uv[0] = 0;//(char)(mTextureUVs.StartU() * 255.0f);
+        particle->uv[1] = 0;//(char)(mTextureUVs.StartV() * 255.0f);
+        particle->uv[2] = 255;//(char)(mTextureUVs.EndU() * 255.0f);
+        particle->uv[3] = 255;//(char)(mTextureUVs.EndV() * 255.0f);
+
+        rand = mEmitterDef.VolumeExtent();
+
+        rand.x = bRandom_Float_Int(rand.x, &random_seed);
+        rand.x = bRandom_Float_Int(rand.y, &random_seed);
+        rand.x = bRandom_Float_Int(rand.z, &random_seed);
+
+        pvel = rand - mEmitterDef.VolumeExtent() * 0.5f + mEmitterDef.VolumeCenter();
+        pvel.w = 1.0f;
+        ((void (__cdecl*)(UMath::Vector4*, UMath::Matrix4*, UMath::Vector4*))0x6BD920)(&rotatedVel, &local_world, &pvel);
+
+        particle->vel.x = rotatedVel.x;
+        particle->vel.y = rotatedVel.y;
+        particle->vel.z = rotatedVel.z;
+
+        ppos = { 0, 0, 0, 1 };
+
+        ((void(__cdecl*)(UMath::Vector4*, UMath::Matrix4*, UMath::Vector4*))0x6BD920)((UMath::Vector4*)&particle->initialPos, &local_world, &ppos);
+
+        particle->initialPos += (particle->vel * current_particle_age);
+        particle->initialPos.z += (gravity * current_particle_age * current_particle_age);
+
+        particle->size = mEmitterDef.Spin();
+
+        particle->length = num_particles + std::fminf(255.0f, mEmitterDef.LengthStart());
+
         particle->life = (uint16_t)(life * 8191);
         particle->flags = (!mEmitterDef.zContrail() ? NGParticle::Flags::SPAWN : (NGParticle::Flags)NULL);
-        particle->size = mEmitterDef.HeightStart();
+        particle->length = mEmitterDef.LengthStart();
+        particle->width = mEmitterDef.HeightStart();
+
+        particle->color = particleColor;
+
+        current_particle_age += particle_age_factor;
 
         // TODO - do calcbounce
     }
