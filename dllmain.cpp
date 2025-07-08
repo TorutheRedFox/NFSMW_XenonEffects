@@ -1417,484 +1417,6 @@ void* __stdcall Attrib_Instance_GetAttributePointer_Shim(uint32_t hash, uint32_t
     return Attrib_Instance_GetAttributePointer((void*)fuelcell_attrib_buffer5, hash, unk);
 }
 
-//void __declspec(naked) CGEmitter_SpawnParticles()
-//{
-//    _asm
-//    {
-//                fld     dword ptr [esp+8]
-//                sub     esp, 0ACh
-//                fcomp   ds:flt_9C248C
-//                push    ebp
-//                mov     ebp, ecx
-//                fnstsw  ax
-//                test    ah, 41h
-//                jnp     loc_73F920
-//                fld     dword ptr [esp+0B4h]
-//                fcomp   ds:flt_9C248C
-//                fnstsw  ax
-//                test    ah, 41h
-//                jnp     loc_73F920
-//                mov     eax, randomSeed
-//                push    ebx
-//                push    esi
-//                push    edi
-//                lea     esi, [ebp+30h]
-//                mov     ecx, 10h
-//                lea     edi, [esp+7Ch]
-//                rep movsd
-//                mov     esi, [ebp+4]
-//                mov     [esp+10h], eax
-//                fld     dword ptr [esi+6Ch]
-//                fld     st
-//                fmul    dword ptr [esi+8Ch]
-//                fsubr   st, st(1)
-//                fstp    dword ptr [esp+3Ch]
-//                fstp    st
-//                fld     dword ptr [esi+50h]
-//                fmul    ds:flt_9C92F0
-//                call    __ftol2
-//                fld     dword ptr [esi+54h]
-//                fmul    ds:flt_9C92F0
-//                mov     edi, eax
-//                call    __ftol2
-//                fld     dword ptr [esi+58h]
-//                fmul    ds:flt_9C92F0
-//                mov     ebx, eax
-//                call    __ftol2
-//                fld     dword ptr [esi+5Ch]
-//                fmul    ds:flt_9C92F0
-//                mov     [esp+24h], eax
-//                call    __ftol2
-//                fld     ds:flt_9C2478
-//                fld     dword ptr [esp+0C4h]
-//                mov     ecx, eax
-//                fucompp
-//                fnstsw  ax
-//                test    ah, 44h
-//                jnp     short loc_73F409
-//                fld     dword ptr [esp+0C4h]
-//                fmul    ds:flt_9EA540
-//                fld     ds:flt_9EA540
-//                fcomp   st(1)
-//                fnstsw  ax
-//                test    ah, 5
-//                jp      short loc_73F402
-//                fstp    st
-//                fld     ds:flt_9EA540
-//
-//loc_73F402:                             ; CODE XREF: CGEmitter::SpawnParticles(float,float)+D8↑j
-//                call    __ftol2
-//                mov     ecx, eax
-//
-//loc_73F409:                             ; CODE XREF: CGEmitter::SpawnParticles(float,float)+BC↑j
-//                fld     dword ptr [esp+0C4h]
-//                mov     eax, [esp+24h]
-//                fcomp   ds:flt_9C2478
-//                shl     ecx, 8
-//                or      ecx, edi
-//                shl     ecx, 8
-//                or      ecx, ebx
-//                shl     ecx, 8
-//                or      ecx, eax
-//                fnstsw  ax
-//                mov     [esp+50h], ecx
-//                test    ah, 41h
-//                jnz     short loc_73F43D
-//                fld     dword ptr [esp+0C4h]
-//                jmp     short loc_73F443
-//; ---------------------------------------------------------------------------
-//
-//loc_73F43D:                             ; CODE XREF: CGEmitter::SpawnParticles(float,float)+112↑j
-//                fld     ds:flt_9C2478
-//
-//loc_73F443:                             ; CODE XREF: CGEmitter::SpawnParticles(float,float)+11B↑j
-//                mov     eax, [ebp+4]
-//                fmul    dword ptr [eax+90h]
-//                fmul    dword ptr [eax+70h]
-//                fld     dword ptr [esp+0C4h]
-//                fcomp   ds:flt_9C2478
-//                fnstsw  ax
-//                test    ah, 41h
-//                jnz     short loc_73F46C
-//                fld     dword ptr [esp+0C4h]
-//                jmp     short loc_73F472
-//; ---------------------------------------------------------------------------
-//
-//loc_73F46C:                             ; CODE XREF: CGEmitter::SpawnParticles(float,float)+141↑j
-//                fld     ds:flt_9C2478
-//
-//loc_73F472:                             ; CODE XREF: CGEmitter::SpawnParticles(float,float)+14A↑j
-//                mov     ecx, [ebp+4]
-//                fmul    dword ptr [ecx+90h]
-//                xor     ebx, ebx
-//                fxch    st(1)
-//                push    ebx
-//                fmul    ds:flt_9C2C44
-//                push    28638D89h
-//                mov     ecx, ebp
-//                //sub ecx, 4
-//                fsubp   st(1), st
-//                fstp    dword ptr [esp+28h]
-//                call    Attrib_Instance_GetAttributePointer_Shim; Attrib::Instance::GetAttributePointer(const(ulong,uint))
-//                test    eax, eax
-//                jnz     short loc_73F4A6
-//                push    1
-//                call    Attrib_DefaultDataArea; Attrib::DefaultDataArea((uint))
-//                add     esp, 4
-//
-//loc_73F4A6:                             ; CODE XREF: CGEmitter::SpawnParticles(float,float)+17A↑j
-//                mov     dl, [eax]
-//                push    0
-//                push    0D2603865h
-//                mov     ecx, ebp
-//                //sub ecx, 4
-//                mov     [esp+22h], dl
-//                call    Attrib_Instance_GetAttributePointer_Shim; Attrib::Instance::GetAttributePointer(const(ulong,uint))
-//                test    eax, eax
-//                jnz     short loc_73F4C8
-//                push    1
-//                call    Attrib_DefaultDataArea; Attrib::DefaultDataArea((uint))
-//                add     esp, 4
-//
-//loc_73F4C8:                             ; CODE XREF: CGEmitter::SpawnParticles(float,float)+19C↑j
-//                mov     al, [eax]
-//                push    0
-//                push    0E2CC8106h
-//                mov     ecx, ebp
-//                //sub ecx, 4
-//                mov     [esp+21h], al
-//                call    Attrib_Instance_GetAttributePointer_Shim; Attrib::Instance::GetAttributePointer(const(ulong,uint))
-//                test    eax, eax
-//                jnz     short loc_73F4EA
-//                push    1
-//                call    Attrib_DefaultDataArea ; Attrib::DefaultDataArea((uint))
-//                add     esp, 4
-//
-//loc_73F4EA:                             ; CODE XREF: CGEmitter::SpawnParticles(float,float)+1BE↑j
-//                mov     cl, [eax]
-//                mov     edx, [ebp+4]
-//                movzx   eax, byte ptr [edx+94h]
-//                test    eax, eax
-//                mov     [esp+1Bh], cl
-//                mov     [esp+24h], eax
-//                jz      short loc_73F50C
-//                dec     eax
-//                mov     ebx, 1
-//                mov     [esp+24h], eax
-//
-//loc_73F50C:                             ; CODE XREF: CGEmitter::SpawnParticles(float,float)+1E0↑j
-//                fld     dword ptr [esp+0C0h]
-//                mov     dword ptr [esp+14h], 0
-//                fdiv    dword ptr [esp+20h]
-//                fstp    dword ptr [esp+58h]
-//                fld     ds:flt_9C248C
-//                fld     dword ptr [esp+20h]
-//                fucompp
-//                fnstsw  ax
-//                test    ah, 44h
-//                jnp     loc_73F913
-//                lea     ebx, [ebx+0]
-//
-//loc_73F540:                             ; CODE XREF: CGEmitter::SpawnParticles(float,float)+5ED↓j
-//                fld     dword ptr [esp+20h]
-//                mov     eax, dword ptr[gParticleList.mNumParticles]
-//                cmp     eax, MaxParticles
-//                fsub    ds:flt_9C2478
-//                fstp    dword ptr [esp+20h]
-//                jnb     loc_73F913
-//                lea     esi, [eax+eax*8]
-//                mov ecx, dword ptr[gParticleList.mParticles]
-//                lea     esi, [ecx+esi*8] ; ParticleList gParticleList
-//                inc     eax
-//                test    esi, esi
-//                mov     dword ptr[gParticleList.mNumParticles], eax
-//                jz      loc_73F913
-//                mov     eax, [ebp+4]
-//                mov     ecx, [eax+84h]
-//                mov     edx, [eax+88h]
-//                lea     eax, [esp+10h]
-//                mov     [esp+1Ch], ecx
-//                push    eax             ; int
-//                mov     ecx, edx
-//                push    ecx             ; float
-//                mov     [esp+5Ch], edx
-//                call    bRandom_Float_Int; bRandom(float,uint *)
-//                fadd    dword ptr [esp+24h]
-//                add     esp, 8
-//                fst     dword ptr [esp+1Ch]
-//                fcomp   ds:flt_9C248C
-//                fnstsw  ax
-//                test    ah, 5
-//                jnp     loc_73F913
-//                fld     dword ptr [esp+1Ch]
-//                fcomp   ds:flt_9C92F0
-//                fnstsw  ax
-//                test    ah, 5
-//                jnp     short loc_73F5CF
-//                mov     dword ptr [esp+1Ch], 437F0000h
-//
-//loc_73F5CF:                             ; CODE XREF: CGEmitter::SpawnParticles(float,float)+2A5↑j
-//                mov     edi, [ebp+4]
-//                mov     eax, [edi+10h]
-//                lea     edx, [esp+10h]
-//                push    edx             ; int
-//                push    eax             ; float
-//                call    bRandom_Float_Int; bRandom(float,uint *)
-//                fadd    st, st
-//                lea     ecx, [esp+18h]
-//                push    ecx             ; int
-//                fsubr   dword ptr [edi+10h]
-//                mov     edi, [ebp+4]
-//                mov     edx, [edi+14h]
-//                push    edx             ; float
-//                fsubr   ds:flt_9C2478
-//                fstp    dword ptr [esp+6Ch]
-//                call    bRandom_Float_Int; bRandom(float,uint *)
-//                fadd    st, st
-//                lea     eax, [esp+20h]
-//                push    eax             ; int
-//                fsubr   dword ptr [edi+14h]
-//                mov     edi, [ebp+4]
-//                mov     ecx, [edi+18h]
-//                push    ecx             ; float
-//                fsubr   ds:flt_9C2478
-//                fstp    dword ptr [esp+78h]
-//                call    bRandom_Float_Int  ; bRandom(float,uint *)
-//                mov     eax, [ebp+4]
-//                fadd    st, st
-//                lea     edx, [esp+84h]
-//                push    edx
-//                fsubr   dword ptr [edi+18h]
-//                lea     ecx, [ebp+30h]
-//                push    ecx
-//                add     eax, 40h ; '@'
-//                fsubr   ds:flt_9C2478
-//                push    eax
-//                fstp    dword ptr [esp+88h]
-//                fld     dword ptr [eax-10h]
-//                fmul    dword ptr [ebp+20h]
-//                fstp    dword ptr [esp+4Ch]
-//                fld     dword ptr [eax-0Ch]
-//                fmul    dword ptr [ebp+24h]
-//                fstp    dword ptr [esp+50h]
-//                fld     dword ptr [eax-8]
-//                fmul    dword ptr [ebp+28h]
-//                fstp    dword ptr [esp+54h]
-//                call    sub_478200
-//                fld     dword ptr [esp+90h]
-//                mov     edi, [ebp+4]
-//                fadd    dword ptr [esp+4Ch]
-//                mov     ecx, [edi+7Ch]
-//                fld     dword ptr [esp+94h]
-//                lea     eax, [esp+34h]
-//                fadd    dword ptr [esp+50h]
-//                push    eax             ; int
-//                fld     dword ptr [esp+9Ch]
-//                push    ecx             ; float
-//                fadd    dword ptr [esp+5Ch]
-//                fstp    dword ptr [esp+5Ch]
-//                fld     dword ptr [esp+0A4h]
-//                fadd    dword ptr [esp+60h]
-//                fstp    dword ptr [esp+60h]
-//                fxch    st(1)
-//                fmul    dword ptr [esp+88h]
-//                fstp    dword ptr [esp+54h]
-//                fmul    dword ptr [esp+8Ch]
-//                fstp    dword ptr [esp+58h]
-//                fld     dword ptr [esp+5Ch]
-//                fmul    dword ptr [esp+90h]
-//                fstp    dword ptr [esp+5Ch]
-//                call    bRandom_Float_Int; bRandom(float,uint *)
-//                fadd    st, st
-//                lea     edx, [esp+3Ch]
-//                fld     dword ptr [edi+74h]
-//                fsub    dword ptr [edi+7Ch]
-//                mov     edi, [ebp+4]
-//                faddp   st(1), st
-//                fstp    dword ptr [esp+64h]
-//                mov     eax, [edi+20h]
-//                push    edx             ; int
-//                push    eax             ; float
-//                call    bRandom_Float_Int; bRandom(float,uint *)
-//                fld     dword ptr [edi+20h]
-//                fmul    ds:flt_9C2888
-//                lea     ecx, [esp+44h]
-//                push    ecx             ; int
-//                fsubp   st(1), st
-//                fadd    dword ptr [edi]
-//                mov     edi, [ebp+4]
-//                mov     edx, [edi+24h]
-//                push    edx             ; float
-//                fstp    dword ptr [esp+7Ch]
-//                call    bRandom_Float_Int; bRandom(float,uint *)
-//                fld     dword ptr [edi+24h]
-//                fmul    ds:flt_9C2888
-//                lea     eax, [esp+4Ch]
-//                push    eax             ; int
-//                fsubp   st(1), st
-//                fadd    dword ptr [edi+4]
-//                mov     edi, [ebp+4]
-//                mov     ecx, [edi+28h]
-//                push    ecx             ; float
-//                fstp    dword ptr [esp+88h]
-//                call    bRandom_Float_Int  ; bRandom(float,uint *)
-//                fld     dword ptr [edi+28h]
-//                fmul    ds:flt_9C2888
-//                add     esp, 44h
-//                lea     edx, [esp+40h]
-//                push    edx
-//                fsubp   st(1), st
-//                lea     eax, [esp+80h]
-//                push    eax
-//                fadd    dword ptr [edi+8]
-//                mov     ecx, edx
-//                push    ecx
-//                fstp    dword ptr [esp+54h]
-//                mov     dword ptr [esp+58h], 3F800000h
-//                call    sub_6012B0
-//                fld     dword ptr [esp+34h]
-//                fmul    dword ptr [esp+20h]
-//                mov     edx, [esp+34h]
-//                mov     eax, [esp+38h]
-//                mov     ecx, [esp+3Ch]
-//                fadd    dword ptr [esp+4Ch]
-//                mov     [esi+10h], edx
-//                mov     edx, [esp+48h]
-//                fstp    dword ptr [esi]
-//                mov     [esi+14h], eax
-//                fld     dword ptr [esp+38h]
-//                mov     eax, edx
-//                fmul    dword ptr [esp+20h]
-//                mov     [esi+18h], ecx
-//                mov     ecx, [esp+20h]
-//                mov     [esi+2Ch], edx
-//                mov     edx, [esp+44h]
-//                fadd    dword ptr [esp+50h]
-//                mov     [esi+30h], eax
-//                mov     [esi+34h], ecx
-//                fstp    dword ptr [esi+4]
-//                mov     [esi+1Ch], edx
-//                fld     dword ptr [esp+44h]
-//                add     esp, 0Ch
-//                fmul    dword ptr [esp+14h]
-//                fmul    dword ptr [esp+14h]
-//                fld     dword ptr [esp+30h]
-//                fmul    dword ptr [esp+14h]
-//                faddp   st(1), st
-//                fadd    dword ptr [esp+48h]
-//                fstp    dword ptr [esi+8]
-//                mov     eax, [ebp+4]
-//                fld     dword ptr [eax+80h]
-//                call    __ftol2
-//                mov     [esi+38h], al
-//                mov     ecx, [ebp+4]
-//                fld     dword ptr [ecx+78h]
-//                call    __ftol2
-//                test    bl, 1
-//                mov     edx, [esp+50h]
-//                mov     [esi+40h], al
-//                mov     [esi+0Ch], edx
-//                mov     [esi+3Ch], bl
-//                jz      short loc_73F87A
-//                mov     al, [esp+24h]
-//                mov     [esi+44h], al
-//                mov     ecx, [ebp+14h]
-//                fld     dword ptr [ecx+4] // emitteruv StartU
-//                call    __ftol2
-//                mov     [esi+45h], al
-//                mov     edx, [ebp+14h]
-//                fld     dword ptr [edx+0Ch] // emitteruv StartV
-//                call    __ftol2
-//                mov     [esi+46h], al
-//                lea     eax, [esp+10h]
-//                push    eax
-//                push    0FFh
-//                call    bRandom_Int_Int; bRandom(int,uint *)
-//                lea     ecx, [esp+18h]
-//                push    ecx
-//                push    0FFh
-//                mov     [esi+41h], al
-//                call    bRandom_Int_Int; bRandom(int,uint *)
-//                lea     edx, [esp+20h]
-//                push    edx
-//                push    0FFh
-//                mov     [esi+42h], al
-//                call    bRandom_Int_Int  ; bRandom(int,uint *)
-//                mov     cl, [esp+31h]
-//                mov     dl, [esp+33h]
-//                mov     [esi+43h], al
-//                mov     al, [esp+32h]
-//                add     esp, 18h
-//                mov     [esi+3Dh], al
-//                mov     [esi+3Eh], cl
-//                mov     [esi+3Fh], dl
-//                jmp     short loc_73F8D5
-//; ---------------------------------------------------------------------------
-//
-//loc_73F87A:                             ; CODE XREF: CGEmitter::SpawnParticles(float,float)+4E5↑j
-//                mov     eax, [ebp+14h]
-//                fld     dword ptr [eax+4] // emitteruv StartU
-//                fmul    ds:flt_9C92F0
-//                call    __ftol2
-//                mov     [esi+44h], al
-//                mov     ecx, [ebp+14h]
-//                fld     dword ptr [ecx+0Ch] // emitteruv StartV
-//                fmul    ds:flt_9C92F0
-//                call    __ftol2
-//                mov     [esi+45h], al
-//                mov     edx, [ebp+14h]
-//                fld     dword ptr [edx+8] // emitteruv EndU
-//                fmul    ds:flt_9C92F0
-//                call    __ftol2
-//                mov     [esi+46h], al
-//                mov     eax, [ebp+14h]
-//                fld     dword ptr [eax] // emitteruv EndV
-//                fmul    ds:flt_9C92F0
-//                call    __ftol2
-//                fld     dword ptr [esp+1Ch]
-//                mov     [esi+47h], al
-//                call    __ftol2
-//                mov     [esi+41h], al
-//
-//loc_73F8D5:                             ; CODE XREF: CGEmitter::SpawnParticles(float,float)+558↑j
-//                fld     dword ptr [esp+14h]
-//                mov     al, [esi+3Ch]
-//                test    al, 4
-//                fadd    dword ptr [esp+58h]
-//                fstp    dword ptr [esp+14h]
-//                jnz     short loc_73F8FC
-//                mov     al, [esp+0C8h]
-//                test    al, al
-//                jnz     short loc_73F8FC
-//                push    esi
-//                call    CalcCollisiontime ; CalcCollisiontime(NGParticle *)
-//                add     esp, 4
-//
-//loc_73F8FC:                             ; CODE XREF: CGEmitter::SpawnParticles(float,float)+5C6↑j
-//                                        ; CGEmitter::SpawnParticles(float,float)+5D1↑j
-//                fld     ds:flt_9C248C
-//                fld     dword ptr [esp+20h]
-//                fucompp
-//                fnstsw  ax
-//                test    ah, 44h
-//                jp      loc_73F540
-//
-//loc_73F913:                             ; CODE XREF: CGEmitter::SpawnParticles(float,float)+214↑j
-//                                        ; CGEmitter::SpawnParticles(float,float)+238↑j ...
-//                mov     ecx, [esp+10h]
-//                pop     edi
-//                pop     esi
-//                mov     randomSeed, ecx
-//                pop     ebx
-//
-//loc_73F920:                             ; CODE XREF: CGEmitter::SpawnParticles(float,float)+18↑j
-//                                        ; CGEmitter::SpawnParticles(float,float)+30↑j
-//                pop     ebp
-//                add     esp, 0ACh
-//                retn    0Ch
-//    }
-//}
-
 struct CGEmitter
 {
     Attrib::Gen::fuelcell_emitter mEmitterDef;
@@ -1939,6 +1461,55 @@ CGEmitter::CGEmitter(Attrib::Collection* spec, XenonEffectDef* eDef) :
 //     float age;
 // };
 
+namespace UMath
+{
+    namespace fpu
+    {
+        void RotateTranslate(UMath::Vector4* v, UMath::Matrix4* m, UMath::Vector4* result)
+        {
+            UMath::Vector4 back_chain; // [sp+0h] [-10h]
+
+            back_chain = *v;
+            result->x = (m->v0.x * v->x) + ((m->v1.x * back_chain.y) + ((m->v3.x * back_chain.w) + (m->v2.x * back_chain.z)));
+            result->y = (m->v0.y * back_chain.x)
+                + ((m->v1.y * back_chain.y) + ((m->v3.y * back_chain.w) + (m->v2.y * back_chain.z)));
+            result->z = (m->v0.z * back_chain.x)
+                + ((m->v1.z * back_chain.y) + ((m->v3.z * back_chain.w) + (m->v2.z * back_chain.z)));
+            result->w = (m->v0.w * back_chain.x)
+                + ((m->v1.w * back_chain.y) + ((m->v3.w * back_chain.w) + (m->v2.w * back_chain.z)));
+        }
+
+        void Scalexyz(UMath::Vector4* a, UMath::Vector4* b, UMath::Vector4* result)
+        {
+            result->x = a->x * b->x;
+            result->y = a->y * b->y;
+            result->z = a->z * b->z;
+        }
+
+        void Scalexyz(UMath::Vector4* a, double scaleby, UMath::Vector4* result, float* a4)
+        {
+            *a4 = a->x * scaleby;
+            a4[1] = a->y * scaleby;
+            a4[2] = a->z * scaleby;
+        }
+
+        void Rotate(UMath::Vector4* v, UMath::Matrix4* m, UMath::Vector4* result)
+        {
+            float back_chain; // [sp+0h] [-10h]
+            float v4; // [sp+4h] [-Ch]
+            float v5; // [sp+8h] [-8h]
+
+            back_chain = v->x;
+            v4 = v->y;
+            v5 = v->z;
+            result->x = (m->v0.x * v->x) + ((m->v2.x * v5) + (m->v1.x * v4));
+            result->y = (m->v0.y * back_chain) + ((m->v2.y * v5) + (m->v1.y * v4));
+            result->z = (m->v0.z * back_chain) + ((m->v2.z * v5) + (m->v1.z * v4));
+            result->w = v->w;
+        }
+    }
+}
+
 void CGEmitter::SpawnParticles(float dt, float intensity, bool isContrail)
 {
     if (intensity <= 0.0f)
@@ -1960,6 +1531,8 @@ void CGEmitter::SpawnParticles(float dt, float intensity, bool isContrail)
     float particle_age_factor = dt / num_particles; // f22
     float current_particle_age = 0.0f; // f27
     
+    local_world = this->mLocalWorld;
+
     while (num_particles != 0.0f)
     {
         num_particles -= 1.0f;
@@ -1975,46 +1548,75 @@ void CGEmitter::SpawnParticles(float dt, float intensity, bool isContrail)
 
         if (!(particle = gParticleList.GetNextParticle())) // get next particle in list
             break;
+        sparkLength = mEmitterDef.LengthStart() + bRandom_Float_Int(mEmitterDef.LengthDelta(), &random_seed);
+        if (sparkLength < 0.0f)
+            break;
+        else if (sparkLength > 255.0f)
+            sparkLength = 255.0f;
 
         particle->age = current_particle_age;
 
-        gravity = (bRandom_Float_Int(mEmitterDef.GravityDelta(), &random_seed) * 2) + mEmitterDef.GravityStart() + mEmitterDef.GravityDelta();
+        gravity = (bRandom_Float_Int(mEmitterDef.GravityDelta(), &random_seed) * 2) + mEmitterDef.GravityStart() - mEmitterDef.GravityDelta();
         particle->gravity = gravity;
 
         particle->uv[0] = 0;//(char)(mTextureUVs.StartU() * 255.0f);
         particle->uv[1] = 0;//(char)(mTextureUVs.StartV() * 255.0f);
-        particle->uv[2] = 255;//(char)(mTextureUVs.EndU() * 255.0f);
-        particle->uv[3] = 255;//(char)(mTextureUVs.EndV() * 255.0f);
+        particle->uv[2] = 64;//(char)(mTextureUVs.EndU() * 255.0f);
+        particle->uv[3] = 64;//(char)(mTextureUVs.EndV() * 255.0f);
 
         rand = mEmitterDef.VolumeExtent();
 
         rand.x = bRandom_Float_Int(rand.x, &random_seed);
-        rand.x = bRandom_Float_Int(rand.y, &random_seed);
-        rand.x = bRandom_Float_Int(rand.z, &random_seed);
+        rand.y = bRandom_Float_Int(rand.y, &random_seed);
+        rand.z = bRandom_Float_Int(rand.z, &random_seed);
 
-        pvel = rand - mEmitterDef.VolumeExtent() * 0.5f + mEmitterDef.VolumeCenter();
-        pvel.w = 1.0f;
-        ((void (__cdecl*)(UMath::Vector4*, UMath::Matrix4*, UMath::Vector4*))0x6BD920)(&rotatedVel, &local_world, &pvel);
+        ppos = rand - mEmitterDef.VolumeExtent() * 0.5f + mEmitterDef.VolumeCenter();
+        ppos.w = 1.0f;
 
-        particle->vel.x = rotatedVel.x;
-        particle->vel.y = rotatedVel.y;
-        particle->vel.z = rotatedVel.z;
+        ppos.x *= current_particle_age;
+        ppos.y *= current_particle_age;
+        ppos.z *= current_particle_age;
+        ppos.z += (gravity * current_particle_age * current_particle_age);
 
-        ppos = { 0, 0, 0, 1 };
+        pvel.x = 1.0f - (mEmitterDef.VelocityDelta().x - (bRandom_Float_Int(mEmitterDef.VelocityDelta().x, &random_seed) * 2.0f));
+        pvel.y = 1.0f - (mEmitterDef.VelocityDelta().y - (bRandom_Float_Int(mEmitterDef.VelocityDelta().y, &random_seed) * 2.0f));
+        pvel.z = 1.0f - (mEmitterDef.VelocityDelta().z - (bRandom_Float_Int(mEmitterDef.VelocityDelta().z, &random_seed) * 2.0f));
 
-        ((void(__cdecl*)(UMath::Vector4*, UMath::Matrix4*, UMath::Vector4*))0x6BD920)((UMath::Vector4*)&particle->initialPos, &local_world, &ppos);
+        pvel.x *= mEmitterDef.VelocityInherit().x * this->mVel.x;
+        pvel.y *= mEmitterDef.VelocityInherit().y * this->mVel.y;
+        pvel.z *= mEmitterDef.VelocityInherit().z * this->mVel.z;
 
-        particle->initialPos += (particle->vel * current_particle_age);
-        particle->initialPos.z += (gravity * current_particle_age * current_particle_age);
+        rotatedVel = mEmitterDef.VelocityStart();
+        rotatedVel += ppos;
+
+        UMath::fpu::Rotate(&rotatedVel, &local_world, &rotatedVel);
+
+        pvel.x += (pvel.x * current_particle_age);
+        pvel.y += (pvel.y * current_particle_age);
+        pvel.z += (pvel.z * current_particle_age);
+
+        pvel.x += rotatedVel.x;
+        pvel.y += rotatedVel.y;
+        pvel.z += rotatedVel.z;
+
+        particle->vel.x = pvel.x;
+        particle->vel.y = pvel.y;
+        particle->vel.z = pvel.z;
+
+        UMath::fpu::RotateTranslate(&ppos, &local_world, &ppos);
+
+        particle->initialPos.x = ppos.x;
+        particle->initialPos.y = ppos.y;
+        particle->initialPos.z = ppos.z;
 
         particle->size = mEmitterDef.Spin();
 
-        particle->length = num_particles + std::fminf(255.0f, mEmitterDef.LengthStart());
+        //particle->length = num_particles + std::fminf(255.0f, mEmitterDef.LengthStart());
 
         particle->life = (uint16_t)(life * 8191);
         particle->flags = (!mEmitterDef.zContrail() ? NGParticle::Flags::SPAWN : (NGParticle::Flags)NULL);
-        particle->length = mEmitterDef.LengthStart();
-        particle->width = mEmitterDef.HeightStart();
+        particle->width = (uint8_t)mEmitterDef.HeightStart();
+        particle->length = (uint8_t)sparkLength;
 
         particle->color = particleColor;
 
@@ -2605,8 +2207,8 @@ void XSpriteManager::AddParticle(eView* view, NGParticle* particleList, unsigned
             {
                 uint32_t color = particle->color;
 
-                if (bFadeOutParticles)
-                    ((uint8_t*)&color)[3] = (uint8_t)(((uint8_t*)&color)[3] * (1 - (pow((particle->age / particle->life), 1.1f)))); // QOL feature
+                //if (bFadeOutParticles)
+                //    ((uint8_t*)&color)[3] = (uint8_t)(((uint8_t*)&color)[3] * (1 - (pow((particle->age / particle->life), 1.1f)))); // QOL feature
 
                 spark->v[0].position.x = x;
                 spark->v[0].position.y = y;
@@ -2617,20 +2219,20 @@ void XSpriteManager::AddParticle(eView* view, NGParticle* particleList, unsigned
 
                 spark->v[1].position.x = x;
                 spark->v[1].position.y = y;
-                spark->v[1].position.z = z + particle->size / 2048.0f;
+                spark->v[1].position.z = z + particle->width / 2048.0f;
                 spark->v[1].color = color;
                 spark->v[1].texcoord[0] = particle->uv[2] / 255.0f;
                 spark->v[1].texcoord[1] = particle->uv[1] / 255.0f;
 
-                float offsetAge = particle->width / 2048.0f + particle->age;
-                x = offsetAge * particle->vel.x + particle->initialPos.x;
-                y = offsetAge * particle->vel.y + particle->initialPos.y;
-                z = offsetAge * particle->vel.z + particle->initialPos.z;
+                float offsetAge = (particle->length / 2048.0f) + particle->age;
+                x = (offsetAge * particle->vel.x) + particle->initialPos.x;
+                y = (offsetAge * particle->vel.y) + particle->initialPos.y;
+                z = (offsetAge * particle->vel.z) + particle->initialPos.z;
                 z += offsetAge * particle->gravity * offsetAge;
                 
                 spark->v[2].position.x = x;
                 spark->v[2].position.y = y;
-                spark->v[2].position.z = z + particle->size / 2048.0f;
+                spark->v[2].position.z = z + particle->width / 2048.0f;
                 spark->v[2].color = color;
                 spark->v[2].texcoord[0] = particle->uv[2] / 255.0f;
                 spark->v[2].texcoord[1] = particle->uv[3] / 255.0f;
@@ -2713,7 +2315,7 @@ void XSpriteManager::DrawBatch(eView* view)
     
     g_D3DDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
     
-    sparkList.Draw(view->EVIEW_ID, 0, effect, NULL);
+    sparkList.Draw(view->EVIEW_ID, 0, effect, GetTextureInfo(bStringHash("DEFAULTTEXTURE"), true, false));
     
     g_D3DDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
     
