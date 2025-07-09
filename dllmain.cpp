@@ -297,11 +297,11 @@ public:
     float gravity;
     UMath::Vector3 impactNormal;
     __declspec(align(16)) uint16_t flags;
-    uint16_t size;
+    uint16_t spin;
     uint16_t life;
-    char length;
-    char width;
-    char uv[4];
+    uint8_t length;
+    uint8_t width;
+    uint8_t uv[4];
     float age;
 };
 
@@ -1453,7 +1453,7 @@ CGEmitter::CGEmitter(Attrib::Collection* spec, XenonEffectDef* eDef) :
 //     float gravity;
 //     UMath::Vector3 impactNormal;
 //     __declspec(align(16)) uint16_t flags;
-//     uint16_t size;
+//     uint16_t spin;
 //     uint16_t life;
 //     char length;
 //     char width;
@@ -1467,16 +1467,13 @@ namespace UMath
     {
         void RotateTranslate(UMath::Vector4* v, UMath::Matrix4* m, UMath::Vector4* result)
         {
-            UMath::Vector4 back_chain; // [sp+0h] [-10h]
+            UMath::Vector4 vector;
 
-            back_chain = *v;
-            result->x = (m->v0.x * v->x) + ((m->v1.x * back_chain.y) + ((m->v3.x * back_chain.w) + (m->v2.x * back_chain.z)));
-            result->y = (m->v0.y * back_chain.x)
-                + ((m->v1.y * back_chain.y) + ((m->v3.y * back_chain.w) + (m->v2.y * back_chain.z)));
-            result->z = (m->v0.z * back_chain.x)
-                + ((m->v1.z * back_chain.y) + ((m->v3.z * back_chain.w) + (m->v2.z * back_chain.z)));
-            result->w = (m->v0.w * back_chain.x)
-                + ((m->v1.w * back_chain.y) + ((m->v3.w * back_chain.w) + (m->v2.w * back_chain.z)));
+            vector = *v;
+            result->x = (m->v0.x * v->x) + ((m->v1.x * vector.y) + ((m->v3.x * vector.w) + (m->v2.x * vector.z)));
+            result->y = (m->v0.y * vector.x) + ((m->v1.y * vector.y) + ((m->v3.y * vector.w) + (m->v2.y * vector.z)));
+            result->z = (m->v0.z * vector.x) + ((m->v1.z * vector.y) + ((m->v3.z * vector.w) + (m->v2.z * vector.z)));
+            result->w = (m->v0.w * vector.x) + ((m->v1.w * vector.y) + ((m->v3.w * vector.w) + (m->v2.w * vector.z)));
         }
 
         void Scalexyz(UMath::Vector4* a, UMath::Vector4* b, UMath::Vector4* result)
@@ -1486,26 +1483,49 @@ namespace UMath
             result->z = a->z * b->z;
         }
 
-        void Scalexyz(UMath::Vector4* a, double scaleby, UMath::Vector4* result, float* a4)
+        void Scalexyz(UMath::Vector4* a, float scaleby, UMath::Vector4* result)
         {
-            *a4 = a->x * scaleby;
-            a4[1] = a->y * scaleby;
-            a4[2] = a->z * scaleby;
+            result->x = a->x * scaleby;
+            result->y = a->y * scaleby;
+            result->z = a->z * scaleby;
         }
 
         void Rotate(UMath::Vector4* v, UMath::Matrix4* m, UMath::Vector4* result)
         {
-            float back_chain; // [sp+0h] [-10h]
-            float v4; // [sp+4h] [-Ch]
-            float v5; // [sp+8h] [-8h]
-
-            back_chain = v->x;
-            v4 = v->y;
-            v5 = v->z;
-            result->x = (m->v0.x * v->x) + ((m->v2.x * v5) + (m->v1.x * v4));
-            result->y = (m->v0.y * back_chain) + ((m->v2.y * v5) + (m->v1.y * v4));
-            result->z = (m->v0.z * back_chain) + ((m->v2.z * v5) + (m->v1.z * v4));
+            result->x = (m->v0.x * v->x) + (m->v1.x * v->y) + (m->v2.x * v->z);
+            result->y = (m->v0.y * v->x) + (m->v1.y * v->y) + (m->v2.y * v->z);
+            result->z = (m->v0.z * v->x) + (m->v1.z * v->y) + (m->v2.z * v->z);
             result->w = v->w;
+        }
+
+        void Add(UMath::Vector4* a, UMath::Vector4* b, UMath::Vector4* result)
+        {
+            result->x = a->x + b->x;
+            result->y = a->y + b->y;
+            result->z = a->z + b->z;
+            result->w = a->w + b->w;
+        }
+
+        void Add(UMath::Vector3* a, UMath::Vector3* b, UMath::Vector4* result)
+        {
+            result->x = a->x + b->x;
+            result->y = a->y + b->y;
+            result->z = a->z + b->z;
+        }
+
+        void ScaleAdd(UMath::Vector4* a, float scaleby, UMath::Vector4* b, UMath::Vector4* result)
+        {
+            result->x = (a->x * scaleby) + b->x;
+            result->y = (a->y * scaleby) + b->y;
+            result->z = (a->z * scaleby) + b->z;
+            result->w = (a->w * scaleby) + b->w;
+        }
+
+        void ScaleAdd(UMath::Vector3* a, float scaleby, UMath::Vector3* b, UMath::Vector3* result)
+        {
+            result->x = (a->x * scaleby) + b->x;
+            result->y = (a->y * scaleby) + b->y;
+            result->z = (a->z * scaleby) + b->z;
         }
     }
 }
@@ -1524,19 +1544,26 @@ void CGEmitter::SpawnParticles(float dt, float intensity, bool isContrail)
     int r = (int)(mEmitterDef.Colour1().x * 255.0f); // r7
     int g = (int)(mEmitterDef.Colour1().y * 255.0f); // r8
     int b = (int)(mEmitterDef.Colour1().z * 255.0f); // r10
-    int a = (int)(mEmitterDef.Colour1().w * 255.0f * intensity); // r9
-    unsigned int particleColor = ((int)a << 24) | (int)r | ((int)g << 8) | ((int)b << 16); // r26
-    float num_particles_variance = mEmitterDef.NumParticles() * mEmitterDef.NumParticlesVariance() * 100.0f; // f0
-    float num_particles = mEmitterDef.NumParticles() - num_particles_variance; // f29
+    int a = (int)(mEmitterDef.Colour1().w * 255.0f); // r9
+
+    // begin next gen code
+    if (intensity != 1.0f)
+    {
+        a = std::fminf(42.0f, intensity * 42.0f);
+    }
+    // end next gen code
+
+    unsigned int particleColor = (a << 24) | (r << 16) | (g << 8) | b; // r26
+    float num_particles_variance = (intensity * mEmitterDef.NumParticles()) * mEmitterDef.NumParticlesVariance() * 100.0f; // f0
+    float num_particles = (intensity * mEmitterDef.NumParticles()) - num_particles_variance; // f29
     float particle_age_factor = dt / num_particles; // f22
     float current_particle_age = 0.0f; // f27
     
     local_world = this->mLocalWorld;
+    local_orientation = this->mLocalWorld;
 
     while (num_particles != 0.0f)
     {
-        num_particles -= 1.0f;
-
         NGParticle* particle;
         float sparkLength; // f30
         float ld;
@@ -1546,23 +1573,32 @@ void CGEmitter::SpawnParticles(float dt, float intensity, bool isContrail)
         float gravity; // f30
         struct UMath::Vector4 ppos; // r1+0xB8
 
+        num_particles--;
+
         if (!(particle = gParticleList.GetNextParticle())) // get next particle in list
             break;
+
         sparkLength = mEmitterDef.LengthStart() + bRandom_Float_Int(mEmitterDef.LengthDelta(), &random_seed);
+        
         if (sparkLength < 0.0f)
             break;
-        else if (sparkLength > 255.0f)
+        else if (sparkLength >= 255.0f)
             sparkLength = 255.0f;
 
-        particle->age = current_particle_age;
+        rand.x = 1.0f - (mEmitterDef.VelocityDelta().x - (2 * bRandom_Float_Int(mEmitterDef.VelocityDelta().x, &random_seed)));
+        rand.y = 1.0f - (mEmitterDef.VelocityDelta().y - (2 * bRandom_Float_Int(mEmitterDef.VelocityDelta().y, &random_seed)));
+        rand.z = 1.0f - (mEmitterDef.VelocityDelta().z - (2 * bRandom_Float_Int(mEmitterDef.VelocityDelta().z, &random_seed)));
 
-        gravity = (bRandom_Float_Int(mEmitterDef.GravityDelta(), &random_seed) * 2) + mEmitterDef.GravityStart() - mEmitterDef.GravityDelta();
-        particle->gravity = gravity;
+        pvel = mEmitterDef.VelocityInherit();
 
-        particle->uv[0] = 0;//(char)(mTextureUVs.StartU() * 255.0f);
-        particle->uv[1] = 0;//(char)(mTextureUVs.StartV() * 255.0f);
-        particle->uv[2] = 64;//(char)(mTextureUVs.EndU() * 255.0f);
-        particle->uv[3] = 64;//(char)(mTextureUVs.EndV() * 255.0f);
+        UMath::fpu::Scalexyz(&pvel, &mVel, &pvel);
+        UMath::fpu::Rotate(&mEmitterDef.VelocityStart(), &local_orientation, &rotatedVel);
+        UMath::fpu::Add(&pvel, &rotatedVel, &pvel);
+        UMath::fpu::Scalexyz(&pvel, &rand, &pvel);
+
+        particle->vel.x = pvel.x;
+        particle->vel.y = pvel.y;
+        particle->vel.z = pvel.z;
 
         rand = mEmitterDef.VolumeExtent();
 
@@ -1570,59 +1606,43 @@ void CGEmitter::SpawnParticles(float dt, float intensity, bool isContrail)
         rand.y = bRandom_Float_Int(rand.y, &random_seed);
         rand.z = bRandom_Float_Int(rand.z, &random_seed);
 
-        ppos = rand - mEmitterDef.VolumeExtent() * 0.5f + mEmitterDef.VolumeCenter();
+        ppos.x = rand.x - mEmitterDef.VolumeExtent().x * 0.5f + mEmitterDef.VolumeCenter().x;
+        ppos.y = rand.y - mEmitterDef.VolumeExtent().y * 0.5f + mEmitterDef.VolumeCenter().y;
+        ppos.z = rand.z - mEmitterDef.VolumeExtent().z * 0.5f + mEmitterDef.VolumeCenter().z;
         ppos.w = 1.0f;
 
-        ppos.x *= current_particle_age;
-        ppos.y *= current_particle_age;
-        ppos.z *= current_particle_age;
-        ppos.z += (gravity * current_particle_age * current_particle_age);
-
-        pvel.x = 1.0f - (mEmitterDef.VelocityDelta().x - (bRandom_Float_Int(mEmitterDef.VelocityDelta().x, &random_seed) * 2.0f));
-        pvel.y = 1.0f - (mEmitterDef.VelocityDelta().y - (bRandom_Float_Int(mEmitterDef.VelocityDelta().y, &random_seed) * 2.0f));
-        pvel.z = 1.0f - (mEmitterDef.VelocityDelta().z - (bRandom_Float_Int(mEmitterDef.VelocityDelta().z, &random_seed) * 2.0f));
-
-        pvel.x *= mEmitterDef.VelocityInherit().x * this->mVel.x;
-        pvel.y *= mEmitterDef.VelocityInherit().y * this->mVel.y;
-        pvel.z *= mEmitterDef.VelocityInherit().z * this->mVel.z;
-
-        rotatedVel = mEmitterDef.VelocityStart();
-        rotatedVel += ppos;
-
-        UMath::fpu::Rotate(&rotatedVel, &local_world, &rotatedVel);
-
-        pvel.x += (pvel.x * current_particle_age);
-        pvel.y += (pvel.y * current_particle_age);
-        pvel.z += (pvel.z * current_particle_age);
-
-        pvel.x += rotatedVel.x;
-        pvel.y += rotatedVel.y;
-        pvel.z += rotatedVel.z;
-
-        particle->vel.x = pvel.x;
-        particle->vel.y = pvel.y;
-        particle->vel.z = pvel.z;
-
         UMath::fpu::RotateTranslate(&ppos, &local_world, &ppos);
+        UMath::fpu::ScaleAdd((UMath::Vector3*)&pvel, current_particle_age, (UMath::Vector3*)&ppos, &particle->initialPos);
 
-        particle->initialPos.x = ppos.x;
-        particle->initialPos.y = ppos.y;
-        particle->initialPos.z = ppos.z;
+        particle->age = current_particle_age;
 
-        particle->size = mEmitterDef.Spin();
+        gravity = (bRandom_Float_Int(mEmitterDef.GravityDelta(), &random_seed) * 2) + mEmitterDef.GravityStart() - mEmitterDef.GravityDelta();
+        particle->gravity = gravity;
 
-        //particle->length = num_particles + std::fminf(255.0f, mEmitterDef.LengthStart());
+        particle->initialPos.z += gravity * current_particle_age * current_particle_age; // fall
 
         particle->life = (uint16_t)(life * 8191);
-        particle->flags = (!mEmitterDef.zContrail() ? NGParticle::Flags::SPAWN : (NGParticle::Flags)NULL);
         particle->width = (uint8_t)mEmitterDef.HeightStart();
         particle->length = (uint8_t)sparkLength;
 
         particle->color = particleColor;
 
+        particle->uv[0] = (uint8_t)(mTextureUVs.StartU() * 255.0f);
+        particle->uv[1] = (uint8_t)(mTextureUVs.StartV() * 255.0f);
+        particle->uv[2] = (uint8_t)(mTextureUVs.EndU() * 255.0f);
+        particle->uv[3] = (uint8_t)(mTextureUVs.EndV() * 255.0f);
+
         current_particle_age += particle_age_factor;
 
-        // TODO - do calcbounce
+        // begin next gen code
+        particle->flags = (!mEmitterDef.zContrail() ? NGParticle::Flags::SPAWN : (NGParticle::Flags)NULL);
+        particle->spin = mEmitterDef.Spin();
+        if ((particle->flags & NGParticle::Flags::BOUNCED) == 0 && !isContrail)
+        {
+            // TODO
+            //CalcCollisiontime(particle);
+        }
+        // end next gen code
     }
 }
 
@@ -2193,9 +2213,14 @@ void XSpriteManager::AddParticle(eView* view, NGParticle* particleList, unsigned
     {
         NGParticle* particle = &particleList[i];
         
-        float x = particle->age * particle->vel.x + particle->initialPos.x;
-        float y = particle->age * particle->vel.y + particle->initialPos.y;
-        float z = particle->age * particle->vel.z + particle->initialPos.z + particle->age * particle->age * particle->gravity;
+        //float x = (particle->age * particle->vel.x) + particle->initialPos.x;
+        //float y = (particle->age * particle->vel.y) + particle->initialPos.y;
+        //float z = (particle->age * particle->vel.z) + particle->initialPos.z + particle->age * particle->age * particle->gravity;
+
+        UMath::Vector3 startPos;
+        UMath::Vector3 endPos;
+        float endAge;
+        float width = particle->width / 2048.0f;
 
         if (i < sparkList.mSprintListView[view->EVIEW_ID - 1].mMaxSprites)
         {
@@ -2207,39 +2232,40 @@ void XSpriteManager::AddParticle(eView* view, NGParticle* particleList, unsigned
             {
                 uint32_t color = particle->color;
 
+                UMath::fpu::ScaleAdd(&particle->vel, particle->age, &particle->initialPos, &startPos);
+                startPos.z += particle->age * particle->age * particle->gravity;
+
+                endAge = (particle->length / 2048.0f) + particle->age;
+                UMath::fpu::ScaleAdd(&particle->vel, endAge, &particle->initialPos, &endPos);
+                endPos.z += endAge * endAge * particle->gravity;
+
                 //if (bFadeOutParticles)
                 //    ((uint8_t*)&color)[3] = (uint8_t)(((uint8_t*)&color)[3] * (1 - (pow((particle->age / particle->life), 1.1f)))); // QOL feature
 
-                spark->v[0].position.x = x;
-                spark->v[0].position.y = y;
-                spark->v[0].position.z = z;
+                spark->v[0].position = startPos;
                 spark->v[0].color = color;
                 spark->v[0].texcoord[0] = particle->uv[0] / 255.0f;
                 spark->v[0].texcoord[1] = particle->uv[1] / 255.0f;
 
-                spark->v[1].position.x = x;
-                spark->v[1].position.y = y;
-                spark->v[1].position.z = z + particle->width / 2048.0f;
+                spark->v[1].position = startPos;
+                spark->v[1].position.z += width;
                 spark->v[1].color = color;
                 spark->v[1].texcoord[0] = particle->uv[2] / 255.0f;
                 spark->v[1].texcoord[1] = particle->uv[1] / 255.0f;
 
-                float offsetAge = (particle->length / 2048.0f) + particle->age;
-                x = (offsetAge * particle->vel.x) + particle->initialPos.x;
-                y = (offsetAge * particle->vel.y) + particle->initialPos.y;
-                z = (offsetAge * particle->vel.z) + particle->initialPos.z;
-                z += offsetAge * particle->gravity * offsetAge;
+                //float offsetAge = (particle->length / 2048.0f) + particle->age;
+                //x = (offsetAge * particle->vel.x) + particle->initialPos.x;
+                //y = (offsetAge * particle->vel.y) + particle->initialPos.y;
+                //z = (offsetAge * particle->vel.z) + particle->initialPos.z;
+                //z += offsetAge * particle->gravity * offsetAge;
                 
-                spark->v[2].position.x = x;
-                spark->v[2].position.y = y;
-                spark->v[2].position.z = z + particle->width / 2048.0f;
+                spark->v[2].position = endPos;
+                spark->v[2].position.z += width;
                 spark->v[2].color = color;
                 spark->v[2].texcoord[0] = particle->uv[2] / 255.0f;
                 spark->v[2].texcoord[1] = particle->uv[3] / 255.0f;
 
-                spark->v[3].position.x = x;
-                spark->v[3].position.y = y;
-                spark->v[3].position.z = z;
+                spark->v[3].position = endPos;
                 spark->v[3].color = color;
                 spark->v[3].texcoord[0] = particle->uv[0] / 255.0f;
                 spark->v[3].texcoord[1] = particle->uv[3] / 255.0f;
@@ -2315,7 +2341,7 @@ void XSpriteManager::DrawBatch(eView* view)
     
     g_D3DDevice->SetRenderState(D3DRS_ZWRITEENABLE, FALSE);
     
-    sparkList.Draw(view->EVIEW_ID, 0, effect, GetTextureInfo(bStringHash("DEFAULTTEXTURE"), true, false));
+    sparkList.Draw(view->EVIEW_ID, 0, effect, NULL);
     
     g_D3DDevice->SetRenderState(D3DRS_ZWRITEENABLE, TRUE);
     

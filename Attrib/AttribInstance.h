@@ -35,7 +35,7 @@ namespace Attrib
 		Instance(RefSpec& refspec, uint32_t msgPort, void* owner)
 		{
 			Collection* collection = ((Collection * (__thiscall*)(RefSpec&))0x4560D0)(refspec);
-			Instance(collection, msgPort, owner);
+			((void(__thiscall*)(Instance*, Collection*, uint32_t, void*))0x452380)(this, collection, msgPort, owner);
 		}
 
 		class Attrib::Attribute* Get(void *unk, uint32_t attributeKey)
