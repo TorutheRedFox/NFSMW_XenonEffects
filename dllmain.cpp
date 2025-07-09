@@ -1549,7 +1549,7 @@ void CGEmitter::SpawnParticles(float dt, float intensity, bool isContrail)
     // begin next gen code
     if (intensity != 1.0f)
     {
-        a = std::fminf(42.0f, intensity * 42.0f);
+        a = (int)std::fminf(42.0f, intensity * 42.0f);
     }
     // end next gen code
 
@@ -1562,7 +1562,7 @@ void CGEmitter::SpawnParticles(float dt, float intensity, bool isContrail)
     local_world = this->mLocalWorld;
     local_orientation = this->mLocalWorld;
 
-    while (num_particles != 0.0f)
+    while (num_particles > 0.0f)
     {
         NGParticle* particle;
         float sparkLength; // f30
@@ -1600,11 +1600,9 @@ void CGEmitter::SpawnParticles(float dt, float intensity, bool isContrail)
         particle->vel.y = pvel.y;
         particle->vel.z = pvel.z;
 
-        rand = mEmitterDef.VolumeExtent();
-
-        rand.x = bRandom_Float_Int(rand.x, &random_seed);
-        rand.y = bRandom_Float_Int(rand.y, &random_seed);
-        rand.z = bRandom_Float_Int(rand.z, &random_seed);
+        rand.x = bRandom_Float_Int(mEmitterDef.VolumeExtent().x, &random_seed);
+        rand.y = bRandom_Float_Int(mEmitterDef.VolumeExtent().y, &random_seed);
+        rand.z = bRandom_Float_Int(mEmitterDef.VolumeExtent().z, &random_seed);
 
         ppos.x = rand.x - mEmitterDef.VolumeExtent().x * 0.5f + mEmitterDef.VolumeCenter().x;
         ppos.y = rand.y - mEmitterDef.VolumeExtent().y * 0.5f + mEmitterDef.VolumeCenter().y;
@@ -1644,6 +1642,8 @@ void CGEmitter::SpawnParticles(float dt, float intensity, bool isContrail)
         }
         // end next gen code
     }
+
+    randomSeed = random_seed;
 }
 
 //void __fastcall CGEmitter_SpawnParticles(CGEmitter* _this, int dummy, float dt, float intensity, bool isContrail)
