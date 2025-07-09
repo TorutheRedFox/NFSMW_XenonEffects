@@ -195,7 +195,7 @@ void(__stdcall* sub_739600)() = (void(__stdcall*)())0x739600;
 void(__thiscall* CarRenderConn_UpdateEngineAnimation)(void* CarRenderConn, float param1, void* PktCarService) = (void(__thiscall*)(void*, float, void*))0x00745F20;
 void(__stdcall* sub_6CFCE0)() = (void(__stdcall*)())0x6CFCE0;
 void(__cdecl* ParticleSetTransform)(D3DXMATRIX* worldmatrix, uint32_t EVIEW_ID) = (void(__cdecl*)(D3DXMATRIX*, uint32_t))0x6C8000;
-bool(__thiscall* WCollisionMgr_CheckHitWorld)(void* WCollisionMgr, UMath::Matrix4* inputSeg, void* cInfo, uint32_t primMask) = (bool(__thiscall*)(void*, UMath::Matrix4*, void*, uint32_t))0x007854B0;
+bool(__thiscall* WCollisionMgr_CheckHitWorld)(void* WCollisionMgr, UMath::Vector4* inputSeg, void* cInfo, uint32_t primMask) = (bool(__thiscall*)(void*, UMath::Vector4*, void*, uint32_t))0x007854B0;
 void(__cdecl* GameSetTexture)(void* TextureInfo, uint32_t unk) = (void(__cdecl*)(void*, uint32_t))0x006C68B0;
 void* (*CreateResourceFile)(char* filename, int ResFileType, int unk1, int unk2, int unk3) = (void* (*)(char*, int, int, int, int))0x0065FD30;
 void(__thiscall* ResourceFile_BeginLoading)(void* ResourceFile, void* callback, void* unk) = (void(__thiscall*)(void*, void*, void*))0x006616F0;
@@ -1185,152 +1185,96 @@ void __cdecl AddXenonEffect(
     }
 }
 
-void __declspec(naked) CalcCollisiontime()
+struct WCollisionMgr
 {
-    _asm
+    unsigned int fSurfaceExclusionMask;
+    unsigned int fPrimitiveMask;
+
+    struct WorldCollisionInfo
     {
-        sub     esp, 9Ch
-        fld     flt_A6C230
-        push    esi
-        mov     esi, [esp + 0A4h]
-        fadd    dword ptr[esi + 8]
-        mov     eax, [esi + 30h]
-        mov[esp + 4], eax
-        mov     ecx, [esi]
-        fst     dword ptr[esi + 8]
-        mov     edx, ecx
-        fld     dword ptr[esp + 4]
-        mov[esp + 24h], ecx
-        fmul    dword ptr[esi + 10h]
-        mov     dword ptr[esp + 18h], 3F800000h
-        mov[esp + 14h], edx
-        mov[esp + 30h], edx
-        fadd    dword ptr[esi]
-        fld     dword ptr[esp + 4]
-        fmul    dword ptr[esi + 14h]
-        fadd    dword ptr[esi + 4]
-        fstp    dword ptr[esp + 20h]
-        fld     dword ptr[esi + 30h]
-        fld     dword ptr[esp + 4]
-        fmul    dword ptr[esi + 18h]
-        fadd    st, st(3)
-        fld     st(1)
-        fmul    st, st(2)
-        fmul    dword ptr[esi + 1Ch]
-        faddp   st(1), st
-        fstp    st(1)
-        fld     dword ptr[esp + 20h]
-        fchs
-        fld     dword ptr[esi + 4]
-        fchs
-        fstp    dword ptr[esp + 0Ch]
-        mov     eax, [esp + 0Ch]
-        fxch    st(3)
-        mov[esp + 28h], eax
-        mov     eax, [esp + 18h]
-        fstp    dword ptr[esp + 10h]
-        mov     ecx, [esp + 10h]
-        fxch    st(2)
-        fstp    dword ptr[esp + 0Ch]
-        mov[esp + 2Ch], ecx
-        mov     ecx, [esp + 0Ch]
-        fxch    st(1)
-        fstp    dword ptr[esp + 10h]
-        mov     edx, [esp + 10h]
-        mov[esp + 38h], ecx
-        mov     dword ptr[esp + 18h], 3F800000h
-        fstp    dword ptr[esp + 14h]
-        mov     ecx, [esp + 18h]
-        mov[esp + 34h], eax
-        mov     eax, [esp + 14h]
-        mov[esp + 44h], ecx
-        lea     ecx, [esp + 48h]
-        mov[esp + 3Ch], edx
-        mov[esp + 40h], eax
-        call    sub_404A20
-        fld     flt_A6C230
-        fadd    dword ptr[esp + 2Ch]
-        push    3
-        lea     edx, [esp + 4Ch]
-        push    edx
-        lea     eax, [esp + 30h]
-        fstp    dword ptr[esp + 34h]
-        push    eax
-        lea     ecx, [esp + 28h]
-        mov     dword ptr[esp + 28h], 0
-        mov     dword ptr[esp + 2Ch], 3
-        call    WCollisionMgr_CheckHitWorld
-        test    eax, eax
-        jz      loc_73F30F
-        mov     ecx, [esi + 18h]
-        mov[esp + 4], ecx
-        fld     dword ptr[esp + 4]
-        fmul    dword ptr[esp + 4]
-        fld     dword ptr[esi + 8]
-        fsub    dword ptr[esp + 4Ch]
-        fmul    dword ptr[esi + 1Ch]
-        fmul    ds : flt_9C2A3C
-        fsubp   st(1), st
-        fst     dword ptr[esp + 8]
-        fcomp   ds : flt_9C248C
-        fnstsw  ax
-        test    ah, 41h
-        jp      loc_73F2AA
-        fld     ds : flt_9C248C
-        jmp     loc_73F2ED
-        ; -------------------------------------------------------------------------- -
+        UMath::Vector4 fCollidePt;
+        UMath::Vector4 fNormal;
+        int pad[16];
+    };
+};
 
-        loc_73F2AA:; CODE XREF : CalcCollisiontime + 140↑j
-        mov     edx, [esp + 8]
-        push    edx; float
-        call    sub_6016B0
-        fstp    dword ptr[esp + 0Ch]
-        fld     dword ptr[esi + 1Ch]
-        add     esp, 4
-        fadd    st, st
-        fstp    dword ptr[esp + 1Ch]
-        fld     dword ptr[esp + 8]
-        fsub    dword ptr[esp + 4]
-        fdiv    dword ptr[esp + 1Ch]
-        fcom    ds : flt_9C248C
-        fnstsw  ax
-        test    ah, 5
-        jp      loc_73F2ED
-        fstp    st
-        fld     dword ptr[esp + 4]
-        fchs
-        fsub    dword ptr[esp + 8]
-        fdiv    dword ptr[esp + 1Ch]
+void __cdecl CalcCollisiontime(NGParticle* particle)
+{
+    double v2; // st7
+    float x; // ecx
+    double v4; // st6
+    double v5; // st6
+    double v6; // st5
+    int v7; // eax
+    double v8; // st7
+    double v9; // st7
+    NGParticle::Flags flags; // al
+    float y; // ecx
+    double v12; // st7
+    float life; // [esp+4h] [ebp-9Ch]
+    float z; // [esp+4h] [ebp-9Ch]
+    float v15; // [esp+8h] [ebp-98h]
+    float v16; // [esp+8h] [ebp-98h]
+    float v17; // [esp+Ch] [ebp-94h]
+    float v18; // [esp+Ch] [ebp-94h]
+    float v19; // [esp+10h] [ebp-90h]
+    float v20; // [esp+10h] [ebp-90h]
+    float v21; // [esp+14h] [ebp-8Ch]
+    float v22; // [esp+1Ch] [ebp-84h] BYREF
+    int v23; // [esp+20h] [ebp-80h]
+    float v24; // [esp+24h] [ebp-7Ch]
+    UMath::Vector4 point; // [esp+28h] [ebp-78h] OVERLAPPED BYREF
+    WCollisionMgr::WorldCollisionInfo collisionInfo; // [esp+48h] [ebp-58h] OVERLAPPED BYREF
 
-        loc_73F2ED:; CODE XREF : CalcCollisiontime + 148↑j
-        ; CalcCollisiontime + 17B↑j
-        mov     al, [esi + 3Ch]
-        fstp    dword ptr[esi + 30h]
-        fld     dword ptr[esp + 58h]
-        mov     ecx, [esp + 5Ch]
-        or al, 2
-        fchs
-        mov[esi + 3Ch], al
-        fstp    dword ptr[esi + 24h]
-        mov     eax, [esp + 60h]
-        mov[esi + 20h], eax
-        mov[esi + 28h], ecx
-
-        loc_73F30F : ; CODE XREF : CalcCollisiontime + 10A↑j
-        pop     esi
-        add     esp, 9Ch
-        retn
+    v2 = 0.15f + particle->initialPos.z;
+    life = particle->life;
+    x = particle->initialPos.x;
+    particle->initialPos.z = v2;
+    v24 = x;
+    v4 = life * particle->vel.x;
+    point.z = x;
+    v5 = v4 + particle->initialPos.x;
+    *(float*)&v23 = life * particle->vel.y + particle->initialPos.y;
+    v6 = life * particle->vel.z + v2 + particle->life * particle->life * particle->gravity;
+    v17 = -particle->initialPos.y;
+    point.x = v17;
+    v19 = v2;
+    v18 = -*(float*)&v23;
+    point.y = v19;
+    v20 = v6;
+    v21 = v5;
+    point.w = 1.0;
+    ((void(__thiscall*)(WCollisionMgr::WorldCollisionInfo*))sub_404A20)(&collisionInfo);
+    point.y = 0.15f + point.y;
+    WCollisionMgr collisionMgr;
+    collisionMgr.fSurfaceExclusionMask = 0;
+    collisionMgr.fPrimitiveMask = 3;
+    if (WCollisionMgr_CheckHitWorld(&collisionMgr, &point, &collisionInfo, 3u))
+    {
+        v8 = particle->vel.z * particle->vel.z - (particle->initialPos.z - collisionInfo.fCollidePt.y) * particle->gravity * flt_9C2A3C;
+        if (v8 > 0.0f)
+        {
+            v16 = sqrt(v8);
+            v22 = particle->gravity + particle->gravity;
+            particle->life = (uint16_t)(((v16 - particle->vel.z) / (particle->gravity * 2.0)) * 8191.0f);
+            if (particle->life < 0)
+                particle->life = (uint16_t)(((-particle->vel.z - v16) / (particle->gravity * 2.0)) * 8191.0f);
+        }
+        else
+        {
+            particle->life = 0;
+        }
+        particle->flags |= NGParticle::Flags::SPAWN;
+        particle->impactNormal.x = collisionInfo.fNormal.x;
+        particle->impactNormal.y = collisionInfo.fNormal.y;
+        particle->impactNormal.z = collisionInfo.fNormal.z;
     }
 }
-
-void(*CalcCollisiontime_Abstract)(NGParticle* particle) = (void(*)(NGParticle*))&CalcCollisiontime;
 
 bool BounceParticle(NGParticle* particle)
 {
     if (!bBounceParticles)
         return true;
-
-    return true;
 
     float life;
     float gravity;
@@ -1346,8 +1290,8 @@ bool BounceParticle(NGParticle* particle)
     particle->initialPos += newVelocity * life;
     particle->initialPos.z += gravityOverTime * life;
     
-    if (bCarbonBounceBehavior) // carbon modification
-        gravityOverTime *= 2.0f;
+    //if (bCarbonBounceBehavior) // carbon modification
+    //    gravityOverTime *= 2.0f;
 
     newVelocity.z += gravityOverTime;
     
@@ -1358,9 +1302,9 @@ bool BounceParticle(NGParticle* particle)
     //if (bCarbonBounceBehavior)
     //    particle->life = particle->remainingLife;
     //else
-        particle->life = 8191;
+    particle->life = 8191;
     particle->age = 0.0f;
-    particle->flags = particle->flags & NGParticle::Flags::DEBRIS | NGParticle::Flags::BOUNCED;
+    particle->flags = NGParticle::Flags::BOUNCED;
     
     float bounceCos = UMath::Dot(newVelocity, particle->impactNormal);
     
@@ -1369,8 +1313,8 @@ bool BounceParticle(NGParticle* particle)
     
     particle->vel = (newVelocity - (particle->impactNormal * bounceCos * 2.0f)) * velocityMagnitude;
     
-    if (bCarbonBounceBehavior) // MW doesn't call this here
-        CalcCollisiontime_Abstract(particle);
+    //if (bCarbonBounceBehavior) // MW doesn't call this here
+    //    CalcCollisiontime(particle);
     
     return true;
 }
@@ -1388,12 +1332,11 @@ void ParticleList::AgeParticles(float dt)
             mParticles[aliveCount].age += dt;
             aliveCount++;
         }
-        //else if (particle.flags & NGParticle::Flags::SPAWN)
-        //{
-        //    //particle.remainingLife -= particle.age + dt;
-        //    BounceParticle(&particle);
-        //    aliveCount++;
-        //}
+        else if (particle.flags & NGParticle::Flags::SPAWN)
+        {
+            BounceParticle(&particle);
+            aliveCount++;
+        }
     }
     mNumParticles = aliveCount;
 }
@@ -1637,7 +1580,6 @@ void CGEmitter::SpawnParticles(float dt, float intensity, bool isContrail)
         particle->spin = mEmitterDef.Spin();
         if ((particle->flags & NGParticle::Flags::BOUNCED) == 0 && !isContrail)
         {
-            // TODO
             //CalcCollisiontime(particle);
         }
         // end next gen code
@@ -2305,9 +2247,12 @@ void DrawXenonEmitters(eView *view)
             i = gNGEffectList.mpEnd;
         }
     }
-    gFrameDT = 0.0f;
     eastl_vector_erase_XenonEffectDef_Abstract(&gNGEffectList, gNGEffectList.mpBegin, gNGEffectList.mpEnd);
-    gParticleList.GeneratePolys(view);
+    
+    if (gFrameDT > 0.0f)
+        gParticleList.GeneratePolys(view);
+
+    gFrameDT = 0.0f;
 }
 
 void XSpriteManager::Init()
