@@ -462,6 +462,12 @@ struct SpriteBuffer
 
         g_D3DDevice->SetRenderState(D3DRS_STENCILENABLE, FALSE);
 
+        // force disable mipmaps
+        g_D3DDevice->SetSamplerState(0, D3DSAMP_MIPFILTER, D3DTEXF_NONE);
+        g_D3DDevice->SetSamplerState(1, D3DSAMP_MIPFILTER, D3DTEXF_NONE);
+        g_D3DDevice->SetSamplerState(2, D3DSAMP_MIPFILTER, D3DTEXF_NONE);
+        g_D3DDevice->SetSamplerState(3, D3DSAMP_MIPFILTER, D3DTEXF_NONE);
+
         g_D3DDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, 4 * mNumPolys, 0, 2 * mNumPolys);
     }
 
@@ -1198,13 +1204,13 @@ struct WCollisionMgr
     };
 };
 
-void __cdecl CalcCollisiontime(NGParticle* particle)
+void CalcCollisiontime(NGParticle* particle)
 {
     UMath::Vector4 point; // [esp+28h] [ebp-78h] OVERLAPPED BYREF
     UMath::Vector4 endPoint;
     WCollisionMgr::WorldCollisionInfo collisionInfo; // [esp+48h] [ebp-58h] OVERLAPPED BYREF
     
-    particle->initialPos.z += 0.15f;
+    //particle->initialPos.z += 0.15f;
 
     endPoint.x = -(particle->life * particle->vel.y + particle->initialPos.y);
     endPoint.y = particle->life * particle->vel.z + particle->initialPos.z + particle->life * particle->life * particle->gravity;
@@ -1212,11 +1218,11 @@ void __cdecl CalcCollisiontime(NGParticle* particle)
     endPoint.w = 1.0f;
 
     point.x = -particle->initialPos.y;
-    point.y = particle->initialPos.z;
+    //point.y = particle->initialPos.z; // i guess it only works without it okay
     point.z = particle->initialPos.x;
     point.w = 1.0f;
 
-    point.y += 0.15f;
+    //point.y += 0.15f;
 
     ((void(__thiscall*)(WCollisionMgr::WorldCollisionInfo*))sub_404A20)(&collisionInfo);
     WCollisionMgr collisionMgr;
@@ -1241,11 +1247,8 @@ void __cdecl CalcCollisiontime(NGParticle* particle)
     }
 }
 
-bool BounceParticle(NGParticle* particle)
+void BounceParticle(NGParticle* particle)
 {
-    if (!bBounceParticles)
-        return false;
-
     float life;
     float gravity;
     float gravityOverTime;
@@ -1284,9 +1287,7 @@ bool BounceParticle(NGParticle* particle)
     particle->vel = (newVelocity - (particle->impactNormal * bounceCos * 2.0f)) * velocityMagnitude;
     
     //if (bCarbonBounceBehavior) // MW doesn't call this here
-    //    CalcCollisiontime(particle);
-    
-    return true;
+        //CalcCollisiontime(particle);
 }
 
 void ParticleList::AgeParticles(float dt)
@@ -1302,9 +1303,9 @@ void ParticleList::AgeParticles(float dt)
             mParticles[aliveCount].age += dt;
             aliveCount++;
         }
-        else if (particle.flags & NGParticle::Flags::SPAWN && BounceParticle(&particle))
+        else if (particle.flags & NGParticle::Flags::SPAWN)
         {
-            //BounceParticle(&particle);
+            BounceParticle(&particle);
             aliveCount++;
         }
     }
@@ -1347,32 +1348,6 @@ CGEmitter::CGEmitter(Attrib::Collection* spec, XenonEffectDef* eDef) :
     mLocalWorld = eDef->mat;
     mVel = eDef->vel;
 };
-
-// for reference
-// class NGParticle
-// {
-// public:
-// 
-//     enum Flags : uint8_t
-//     {
-//         DEBRIS = 1 << 0,
-//         SPAWN = 1 << 1,
-//         BOUNCED = 1 << 2,
-//     };
-// 
-//     UMath::Vector3 initialPos;
-//     unsigned int color;
-//     UMath::Vector3 vel;
-//     float gravity;
-//     UMath::Vector3 impactNormal;
-//     __declspec(align(16)) uint16_t flags;
-//     uint16_t spin;
-//     uint16_t life;
-//     char length;
-//     char width;
-//     char uv[4];
-//     float age;
-// };
 
 namespace UMath
 {
@@ -1464,6 +1439,8 @@ void CGEmitter::SpawnParticles(float dt, float intensity, bool isContrail)
     {
         a = (int)std::fminf(42.0f, intensity * 42.0f);
     }
+
+    intensity = std::fmaxf(1.0f, intensity);
     // end next gen code
 
     unsigned int particleColor = (a << 24) | (r << 16) | (g << 8) | b; // r26
@@ -1548,7 +1525,7 @@ void CGEmitter::SpawnParticles(float dt, float intensity, bool isContrail)
         // begin next gen code
         particle->flags = (!mEmitterDef.zSprite() ? NGParticle::Flags::DEBRIS : NULL);
         particle->spin = mEmitterDef.Spin();
-        if ((particle->flags & NGParticle::Flags::BOUNCED) == 0 && !isContrail)
+        if ((particle->flags & NGParticle::Flags::BOUNCED) == 0 && !isContrail && bBounceParticles)
         {
             CalcCollisiontime(particle);
         }
@@ -1614,6 +1591,7 @@ void XSpriteManager::AddParticle(eView* view, NGParticle* particleList, unsigned
                 UMath::fpu::ScaleAdd(&particle->vel, endAge, &particle->initialPos, &endPos);
                 endPos.z += endAge * endAge * particle->gravity;
 
+                // fade out particles if they have bounced or are contrails
                 if (bFadeOutParticles && (particle->flags & NGParticle::Flags::SPAWN) == 0)
                 {
                     uint8_t alpha = (color & 0xFF000000) >> 24;
