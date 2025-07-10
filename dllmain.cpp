@@ -530,6 +530,8 @@ struct SpriteBuffer
 
     void Lock(size_t viewId)
     {
+        (void)viewId;
+
         mpVB->Lock(
             0,
             sizeof(T) * mMaxSprites,
@@ -541,6 +543,8 @@ struct SpriteBuffer
 
     void Unlock(size_t viewId)
     {
+        (void)viewId;
+
         mpVB->Unlock();
         mLockedVB = NULL;
     }
@@ -1232,13 +1236,13 @@ void CalcCollisiontime(NGParticle* particle)
     if (WCollisionMgr_CheckHitWorld(&collisionMgr, &point, &collisionInfo, 3u))
     {
         float newLife = 0.0f;
-        float dist = ((particle->vel.z * particle->vel.z) - (((particle->initialPos.z - collisionInfo.fCollidePt.y) * particle->gravity) * 4.0));
+        float dist = ((particle->vel.z * particle->vel.z) - (((particle->initialPos.z - collisionInfo.fCollidePt.y) * particle->gravity) * 4.0f));
         if (dist > 0.0f)
         {
             dist = sqrt(dist);
-            newLife = ((dist - particle->vel.z) / (particle->gravity * 2.0));
+            newLife = ((dist - particle->vel.z) / (particle->gravity * 2.0f));
             if (newLife < 0.0f)
-                newLife = ((-particle->vel.z - dist) / (particle->gravity * 2.0));
+                newLife = ((-particle->vel.z - dist) / (particle->gravity * 2.0f));
         }
         particle->life = (uint16_t)(newLife * 8191.0f);
         particle->flags |= NGParticle::Flags::SPAWN;
@@ -1354,55 +1358,52 @@ namespace UMath
 {
     namespace fpu
     {
-        void RotateTranslate(UMath::Vector4* v, UMath::Matrix4* m, UMath::Vector4* result)
+        void RotateTranslate(const UMath::Vector4& v, const UMath::Matrix4& m, UMath::Vector4& result)
         {
-            UMath::Vector4 vector;
-
-            vector = *v;
-            result->x = (m->v0.x * v->x) + ((m->v1.x * vector.y) + ((m->v3.x * vector.w) + (m->v2.x * vector.z)));
-            result->y = (m->v0.y * vector.x) + ((m->v1.y * vector.y) + ((m->v3.y * vector.w) + (m->v2.y * vector.z)));
-            result->z = (m->v0.z * vector.x) + ((m->v1.z * vector.y) + ((m->v3.z * vector.w) + (m->v2.z * vector.z)));
-            result->w = (m->v0.w * vector.x) + ((m->v1.w * vector.y) + ((m->v3.w * vector.w) + (m->v2.w * vector.z)));
+            result.x = (m.v0.x * v.x) + ((m.v1.x * v.y) + ((m.v3.x * v.w) + (m.v2.x * v.z)));
+            result.y = (m.v0.y * v.x) + ((m.v1.y * v.y) + ((m.v3.y * v.w) + (m.v2.y * v.z)));
+            result.z = (m.v0.z * v.x) + ((m.v1.z * v.y) + ((m.v3.z * v.w) + (m.v2.z * v.z)));
+            result.w = (m.v0.w * v.x) + ((m.v1.w * v.y) + ((m.v3.w * v.w) + (m.v2.w * v.z)));
         }
 
-        void Scalexyz(UMath::Vector4* a, UMath::Vector4* b, UMath::Vector4* result)
+        void Scalexyz(const UMath::Vector4& a, const UMath::Vector4& b, UMath::Vector4& result)
         {
-            result->x = a->x * b->x;
-            result->y = a->y * b->y;
-            result->z = a->z * b->z;
+            result.x = a.x * b.x;
+            result.y = a.y * b.y;
+            result.z = a.z * b.z;
         }
 
-        void Scalexyz(UMath::Vector4* a, float scaleby, UMath::Vector4* result)
+        void Scalexyz(const UMath::Vector4& a, const float scaleby, UMath::Vector4& result)
         {
-            result->x = a->x * scaleby;
-            result->y = a->y * scaleby;
-            result->z = a->z * scaleby;
+            result.x = a.x * scaleby;
+            result.y = a.y * scaleby;
+            result.z = a.z * scaleby;
         }
 
-        void Rotate(UMath::Vector4* v, UMath::Matrix4* m, UMath::Vector4* result)
+        void Rotate(const UMath::Vector4& v, const UMath::Matrix4& m, UMath::Vector4& result)
         {
-            result->x = (m->v0.x * v->x) + (m->v1.x * v->y) + (m->v2.x * v->z);
-            result->y = (m->v0.y * v->x) + (m->v1.y * v->y) + (m->v2.y * v->z);
-            result->z = (m->v0.z * v->x) + (m->v1.z * v->y) + (m->v2.z * v->z);
-            result->w = v->w;
+            result.x = (m.v0.x * v.x) + (m.v1.x * v.y) + (m.v2.x * v.z);
+            result.y = (m.v0.y * v.x) + (m.v1.y * v.y) + (m.v2.y * v.z);
+            result.z = (m.v0.z * v.x) + (m.v1.z * v.y) + (m.v2.z * v.z);
+            result.w = v.w;
         }
 
-        void Add(UMath::Vector4* a, UMath::Vector4* b, UMath::Vector4* result)
+        void Add(const UMath::Vector4& a, const UMath::Vector4& b, UMath::Vector4& result)
         {
-            result->x = a->x + b->x;
-            result->y = a->y + b->y;
-            result->z = a->z + b->z;
-            result->w = a->w + b->w;
+            result.x = a.x + b.x;
+            result.y = a.y + b.y;
+            result.z = a.z + b.z;
+            result.w = a.w + b.w;
         }
 
-        void Add(UMath::Vector3* a, UMath::Vector3* b, UMath::Vector4* result)
+        void Add(const UMath::Vector3& a, const UMath::Vector3& b, UMath::Vector4& result)
         {
-            result->x = a->x + b->x;
-            result->y = a->y + b->y;
-            result->z = a->z + b->z;
+            result.x = a.x + b.x;
+            result.y = a.y + b.y;
+            result.z = a.z + b.z;
         }
 
-        void ScaleAdd(UMath::Vector4* a, float scaleby, UMath::Vector4* b, UMath::Vector4* result)
+        void ScaleAdd(const UMath::Vector4* a, const float scaleby, const UMath::Vector4* b, UMath::Vector4* result)
         {
             result->x = (a->x * scaleby) + b->x;
             result->y = (a->y * scaleby) + b->y;
@@ -1410,11 +1411,11 @@ namespace UMath
             result->w = (a->w * scaleby) + b->w;
         }
 
-        void ScaleAdd(UMath::Vector3* a, float scaleby, UMath::Vector3* b, UMath::Vector3* result)
+        void ScaleAdd(const UMath::Vector3& a, const float scaleby, const UMath::Vector3& b, UMath::Vector3& result)
         {
-            result->x = (a->x * scaleby) + b->x;
-            result->y = (a->y * scaleby) + b->y;
-            result->z = (a->z * scaleby) + b->z;
+            result.x = (a.x * scaleby) + b.x;
+            result.y = (a.y * scaleby) + b.y;
+            result.z = (a.z * scaleby) + b.z;
         }
     }
 }
@@ -1485,10 +1486,10 @@ void CGEmitter::SpawnParticles(float dt, float intensity, bool isContrail)
 
         pvel = mEmitterDef.VelocityInherit();
 
-        UMath::fpu::Scalexyz(&pvel, &mVel, &pvel);
-        UMath::fpu::Rotate(&mEmitterDef.VelocityStart(), &local_orientation, &rotatedVel);
-        UMath::fpu::Add(&pvel, &rotatedVel, &pvel);
-        UMath::fpu::Scalexyz(&pvel, &rand, &pvel);
+        UMath::fpu::Scalexyz(pvel, mVel, pvel);
+        UMath::fpu::Rotate(mEmitterDef.VelocityStart(), local_orientation, rotatedVel);
+        UMath::fpu::Add(pvel, rotatedVel, pvel);
+        UMath::fpu::Scalexyz(pvel, rand, pvel);
 
         particle->vel.x = pvel.x;
         particle->vel.y = pvel.y;
@@ -1503,8 +1504,8 @@ void CGEmitter::SpawnParticles(float dt, float intensity, bool isContrail)
         ppos.z = rand.z - mEmitterDef.VolumeExtent().z * 0.5f + mEmitterDef.VolumeCenter().z;
         ppos.w = 1.0f;
 
-        UMath::fpu::RotateTranslate(&ppos, &local_world, &ppos);
-        UMath::fpu::ScaleAdd((UMath::Vector3*)&pvel, current_particle_age, (UMath::Vector3*)&ppos, &particle->initialPos);
+        UMath::fpu::RotateTranslate(ppos, local_world, ppos);
+        UMath::fpu::ScaleAdd(*(UMath::Vector3*)&pvel, current_particle_age, *(UMath::Vector3*)&ppos, particle->initialPos);
 
         particle->age = current_particle_age;
 
@@ -1588,18 +1589,18 @@ void XSpriteManager::AddParticle(eView* view, NGParticle* particleList, unsigned
             {
                 uint32_t color = particle->color;
 
-                UMath::fpu::ScaleAdd(&particle->vel, particle->age, &particle->initialPos, &startPos);
+                UMath::fpu::ScaleAdd(particle->vel, particle->age, particle->initialPos, startPos);
                 startPos.z += particle->age * particle->age * particle->gravity;
 
                 endAge = (particle->length / 2048.0f) + particle->age;
-                UMath::fpu::ScaleAdd(&particle->vel, endAge, &particle->initialPos, &endPos);
+                UMath::fpu::ScaleAdd(particle->vel, endAge, particle->initialPos, endPos);
                 endPos.z += endAge * endAge * particle->gravity;
 
                 // fade out particles if they have bounced or are contrails
                 if (bFadeOutParticles && (particle->flags & NGParticle::Flags::SPAWN) == 0)
                 {
                     uint8_t alpha = (color & 0xFF000000) >> 24;
-                    alpha *= 1 - std::powf(particle->age / (particle->life / 8191.0f), 3.0f);
+                    alpha = (uint8_t)(alpha * 1 - std::powf(particle->age / (particle->life / 8191.0f), 3.0f));
                     color = (color & 0x00FFFFFF) + (alpha << 24); // QOL feature
                 }
 
