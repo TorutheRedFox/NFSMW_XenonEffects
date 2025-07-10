@@ -33,8 +33,9 @@ bool bUseCGStyle = false;
 bool bPassShadowMap = false;
 bool bUseD3DDeviceTexture = false;
 bool bBounceParticles = true;
-bool bCarbonBounceBehavior = false;
+//bool bCarbonBounceBehavior = false;
 bool bFadeOutParticles = false;
+bool bCGIntensityBehavior = false;
 float ContrailTargetFPS = 30.0f;
 float SparkTargetFPS = 60.0f;
 float ContrailSpeed = 44.0f;
@@ -1435,12 +1436,15 @@ void CGEmitter::SpawnParticles(float dt, float intensity, bool isContrail)
     int a = (int)(mEmitterDef.Colour1().w * 255.0f); // r9
 
     // begin next gen code
-    if (intensity != 1.0f)
+    if (!bCGIntensityBehavior)
     {
-        a = (int)std::fminf(42.0f, intensity * 42.0f);
-    }
+        if (intensity != 1.0f)
+        {
+            a = (int)std::fminf(42.0f, intensity * 42.0f);
+        }
 
-    intensity = std::fmaxf(1.0f, intensity);
+        intensity = std::fmaxf(1.0f, intensity);
+    }
     // end next gen code
 
     unsigned int particleColor = (a << 24) | (r << 16) | (g << 8) | b; // r26
@@ -2039,8 +2043,8 @@ void InitConfig()
             bUseCGStyle = std::stol(ini["MAIN"]["UseCGStyle"]) != 0;
         if (ini["MAIN"].has("BounceParticles"))
             bBounceParticles = std::stol(ini["MAIN"]["BounceParticles"]) != 0;
-        if (ini["MAIN"].has("CarbonBounceBehavior"))
-            bCarbonBounceBehavior = std::stol(ini["MAIN"]["CarbonBounceBehavior"]) != 0;
+        //if (ini["MAIN"].has("CarbonBounceBehavior"))
+        //    bCarbonBounceBehavior = std::stol(ini["MAIN"]["CarbonBounceBehavior"]) != 0;
         if (ini["MAIN"].has("NISContrails"))
             bNISContrails = std::stol(ini["MAIN"]["NISContrails"]) != 0;
         if (ini["MAIN"].has("PassShadowMap"))
@@ -2053,6 +2057,8 @@ void InitConfig()
             bLimitSparkRate = std::stol(ini["MAIN"]["LimitSparkRate"]) != 0;
         if (ini["MAIN"].has("FadeOutParticles"))
             bFadeOutParticles = std::stol(ini["MAIN"]["FadeOutParticles"]) != 0;
+        if (ini["MAIN"].has("CGIntensityBehavior"))
+            bCGIntensityBehavior = std::stol(ini["MAIN"]["CGIntensityBehavior"]) != 0;
     }
 
     if (ini.has("Limits"))
@@ -2076,75 +2082,81 @@ void InitConfig()
 
     static float fGameTargetFPS = 1.0f / GetTargetFrametime();
 
-    static float fContrailFrameDelay = (fGameTargetFPS / ContrailTargetFPS);
-    ContrailFrameDelay = (uint32_t)round(fContrailFrameDelay);
+    if (ContrailTargetFPS > 0)
+    {
+        static float fContrailFrameDelay = (fGameTargetFPS / ContrailTargetFPS);
+        ContrailFrameDelay = (uint32_t)round(fContrailFrameDelay);
+    }
 
-    static float fSparkFrameDelay = (fGameTargetFPS / SparkTargetFPS);
-    SparkFrameDelay = (uint32_t)round(fSparkFrameDelay);
+    if (SparkTargetFPS > 0)
+    {
+        static float fSparkFrameDelay = (fGameTargetFPS / SparkTargetFPS);
+        SparkFrameDelay = (uint32_t)round(fSparkFrameDelay);
+    }
 
     // iterate through the Elasticity section
-    if (ini.has("Elasticity"))
-    {
-        char* cursor = 0;
-        char IDstr[16] = { 0 };
-        
-        auto const& section = ini["Elasticity"];
-        for (auto const& it : section)
-        {
-            ElasticityPair ep = { 0 };
-
-            strcpy_s(IDstr, it.first.c_str());
-            cursor = IDstr;
-            if ((IDstr[0] == '0') && (IDstr[1] == 'x'))
-            {
-                cursor += 2;
-                if (bValidateHexString(cursor))
-                    sscanf(cursor, "%x", &ep.emmitter_key);
-            }
-            else
-                ep.emmitter_key = Attrib_StringHash32(it.first.c_str());
-
-            ep.Elasticity = stof(it.second);
-
-            //printf("it.first: %s\nit.second: %s\nkey: 0x%X\nel: %.2f\n", it.first.c_str(), it.second.c_str(), ep.emmitter_key, ep.Elasticity);
-
-            elasticityValues.push_back(ep);
-        }
-    }
-
-    // set Elasticity defaults
-    if (elasticityValues.size() == 0)
-    {
-        ElasticityPair ep = { 0xF872A5B4, 160.0f };
-        elasticityValues.push_back(ep);
-        ep = { 0x525E0A0E, 120.0f };
-        elasticityValues.push_back(ep);
-    }
-    else
-    {
-        bool bSet_emsprk_line1 = false;
-        bool bSet_emsprk_line2 = false;
-
-        for (size_t i = 0; i < elasticityValues.size(); i++)
-        {
-            if (elasticityValues.at(i).emmitter_key == 0xF872A5B4)
-                bSet_emsprk_line1 = true;
-            if (elasticityValues.at(i).emmitter_key == 0x525E0A0E)
-                bSet_emsprk_line1 = true;
-        }
-
-        if (!bSet_emsprk_line1)
-        {
-            ElasticityPair ep = { 0xF872A5B4, 160.0f };
-            elasticityValues.push_back(ep);
-        }
-
-        if (!bSet_emsprk_line2)
-        {
-            ElasticityPair ep = { 0x525E0A0E, 120.0f };
-            elasticityValues.push_back(ep);
-        }
-    }
+    //if (ini.has("Elasticity"))
+    //{
+    //    char* cursor = 0;
+    //    char IDstr[16] = { 0 };
+    //    
+    //    auto const& section = ini["Elasticity"];
+    //    for (auto const& it : section)
+    //    {
+    //        ElasticityPair ep = { 0 };
+    //
+    //        strcpy_s(IDstr, it.first.c_str());
+    //        cursor = IDstr;
+    //        if ((IDstr[0] == '0') && (IDstr[1] == 'x'))
+    //        {
+    //            cursor += 2;
+    //            if (bValidateHexString(cursor))
+    //                sscanf(cursor, "%x", &ep.emmitter_key);
+    //        }
+    //        else
+    //            ep.emmitter_key = Attrib_StringHash32(it.first.c_str());
+    //
+    //        ep.Elasticity = stof(it.second);
+    //
+    //        //printf("it.first: %s\nit.second: %s\nkey: 0x%X\nel: %.2f\n", it.first.c_str(), it.second.c_str(), ep.emmitter_key, ep.Elasticity);
+    //
+    //        elasticityValues.push_back(ep);
+    //    }
+    //}
+    //
+    //// set Elasticity defaults
+    //if (elasticityValues.size() == 0)
+    //{
+    //    ElasticityPair ep = { 0xF872A5B4, 160.0f };
+    //    elasticityValues.push_back(ep);
+    //    ep = { 0x525E0A0E, 120.0f };
+    //    elasticityValues.push_back(ep);
+    //}
+    //else
+    //{
+    //    bool bSet_emsprk_line1 = false;
+    //    bool bSet_emsprk_line2 = false;
+    //
+    //    for (size_t i = 0; i < elasticityValues.size(); i++)
+    //    {
+    //        if (elasticityValues.at(i).emmitter_key == 0xF872A5B4)
+    //            bSet_emsprk_line1 = true;
+    //        if (elasticityValues.at(i).emmitter_key == 0x525E0A0E)
+    //            bSet_emsprk_line1 = true;
+    //    }
+    //
+    //    if (!bSet_emsprk_line1)
+    //    {
+    //        ElasticityPair ep = { 0xF872A5B4, 160.0f };
+    //        elasticityValues.push_back(ep);
+    //    }
+    //
+    //    if (!bSet_emsprk_line2)
+    //    {
+    //        ElasticityPair ep = { 0x525E0A0E, 120.0f };
+    //        elasticityValues.push_back(ep);
+    //    }
+    //}
 }
 
 int Init()
