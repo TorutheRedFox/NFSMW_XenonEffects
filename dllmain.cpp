@@ -284,10 +284,10 @@ class NGParticle
 {
 public:
 
-    enum Flags : uint8_t
+    enum Flags
     {
-        DEBRIS = 1 << 0,
-        SPAWN = 1 << 1,
+        SPAWN = 1 << 0,
+        DEBRIS = 1 << 1,
         BOUNCED = 1 << 2,
     };
 
@@ -1200,81 +1200,51 @@ struct WCollisionMgr
 
 void __cdecl CalcCollisiontime(NGParticle* particle)
 {
-    double v2; // st7
-    float x; // ecx
-    double v4; // st6
-    double v5; // st6
-    double v6; // st5
-    int v7; // eax
-    double v8; // st7
-    double v9; // st7
-    NGParticle::Flags flags; // al
-    float y; // ecx
-    double v12; // st7
-    float life; // [esp+4h] [ebp-9Ch]
-    float z; // [esp+4h] [ebp-9Ch]
-    float v15; // [esp+8h] [ebp-98h]
-    float v16; // [esp+8h] [ebp-98h]
-    float v17; // [esp+Ch] [ebp-94h]
-    float v18; // [esp+Ch] [ebp-94h]
-    float v19; // [esp+10h] [ebp-90h]
-    float v20; // [esp+10h] [ebp-90h]
-    float v21; // [esp+14h] [ebp-8Ch]
-    float v22; // [esp+1Ch] [ebp-84h] BYREF
-    int v23; // [esp+20h] [ebp-80h]
-    float v24; // [esp+24h] [ebp-7Ch]
     UMath::Vector4 point; // [esp+28h] [ebp-78h] OVERLAPPED BYREF
+    UMath::Vector4 endPoint;
     WCollisionMgr::WorldCollisionInfo collisionInfo; // [esp+48h] [ebp-58h] OVERLAPPED BYREF
+    
+    particle->initialPos.z += 0.15f;
 
-    v2 = 0.15f + particle->initialPos.z;
-    life = particle->life;
-    x = particle->initialPos.x;
-    particle->initialPos.z = v2;
-    v24 = x;
-    v4 = life * particle->vel.x;
-    point.z = x;
-    v5 = v4 + particle->initialPos.x;
-    *(float*)&v23 = life * particle->vel.y + particle->initialPos.y;
-    v6 = life * particle->vel.z + v2 + particle->life * particle->life * particle->gravity;
-    v17 = -particle->initialPos.y;
-    point.x = v17;
-    v19 = v2;
-    v18 = -*(float*)&v23;
-    point.y = v19;
-    v20 = v6;
-    v21 = v5;
-    point.w = 1.0;
+    endPoint.x = -(particle->life * particle->vel.y + particle->initialPos.y);
+    endPoint.y = particle->life * particle->vel.z + particle->initialPos.z + particle->life * particle->life * particle->gravity;
+    endPoint.z = (particle->life * particle->vel.x) + particle->initialPos.x;
+    endPoint.w = 1.0f;
+
+    point.x = -particle->initialPos.y;
+    point.y = particle->initialPos.z;
+    point.z = particle->initialPos.x;
+    point.w = 1.0f;
+
+    point.y += 0.15f;
+
     ((void(__thiscall*)(WCollisionMgr::WorldCollisionInfo*))sub_404A20)(&collisionInfo);
-    point.y = 0.15f + point.y;
     WCollisionMgr collisionMgr;
     collisionMgr.fSurfaceExclusionMask = 0;
     collisionMgr.fPrimitiveMask = 3;
     if (WCollisionMgr_CheckHitWorld(&collisionMgr, &point, &collisionInfo, 3u))
     {
-        v8 = particle->vel.z * particle->vel.z - (particle->initialPos.z - collisionInfo.fCollidePt.y) * particle->gravity * flt_9C2A3C;
-        if (v8 > 0.0f)
+        float newLife = 0.0f;
+        float dist = ((particle->vel.z * particle->vel.z) - (((particle->initialPos.z - collisionInfo.fCollidePt.y) * particle->gravity) * 4.0));
+        if (dist > 0.0f)
         {
-            v16 = sqrt(v8);
-            v22 = particle->gravity + particle->gravity;
-            particle->life = (uint16_t)(((v16 - particle->vel.z) / (particle->gravity * 2.0)) * 8191.0f);
-            if (particle->life < 0)
-                particle->life = (uint16_t)(((-particle->vel.z - v16) / (particle->gravity * 2.0)) * 8191.0f);
+            dist = sqrt(dist);
+            newLife = ((dist - particle->vel.z) / (particle->gravity * 2.0));
+            if (newLife < 0.0f)
+                newLife = ((-particle->vel.z - dist) / (particle->gravity * 2.0));
         }
-        else
-        {
-            particle->life = 0;
-        }
+        particle->life = (uint16_t)(newLife * 8191.0f);
         particle->flags |= NGParticle::Flags::SPAWN;
-        particle->impactNormal.x = collisionInfo.fNormal.x;
-        particle->impactNormal.y = collisionInfo.fNormal.y;
-        particle->impactNormal.z = collisionInfo.fNormal.z;
+        particle->impactNormal.x = collisionInfo.fNormal.z;
+        particle->impactNormal.y = -collisionInfo.fNormal.x;
+        particle->impactNormal.z = collisionInfo.fNormal.y;
     }
 }
 
 bool BounceParticle(NGParticle* particle)
 {
     if (!bBounceParticles)
-        return true;
+        return false;
 
     float life;
     float gravity;
@@ -1282,7 +1252,7 @@ bool BounceParticle(NGParticle* particle)
     float velocityMagnitude;
     UMath::Vector3 newVelocity = particle->vel;
     
-    life = particle->life / 8191.0f; // MW multiplies life by 8191 when spawning the particle, but Carbon does not as it uses a float
+    life = particle->life / 8191.0f;
     gravity = particle->gravity;
     
     gravityOverTime = particle->gravity * life;
@@ -1332,9 +1302,9 @@ void ParticleList::AgeParticles(float dt)
             mParticles[aliveCount].age += dt;
             aliveCount++;
         }
-        else if (particle.flags & NGParticle::Flags::SPAWN)
+        else if (particle.flags & NGParticle::Flags::SPAWN && BounceParticle(&particle))
         {
-            BounceParticle(&particle);
+            //BounceParticle(&particle);
             aliveCount++;
         }
     }
@@ -1576,550 +1546,17 @@ void CGEmitter::SpawnParticles(float dt, float intensity, bool isContrail)
         current_particle_age += particle_age_factor;
 
         // begin next gen code
-        particle->flags = (!mEmitterDef.zContrail() ? NGParticle::Flags::SPAWN : (NGParticle::Flags)NULL);
+        particle->flags = (!mEmitterDef.zSprite() ? NGParticle::Flags::DEBRIS : NULL);
         particle->spin = mEmitterDef.Spin();
         if ((particle->flags & NGParticle::Flags::BOUNCED) == 0 && !isContrail)
         {
-            //CalcCollisiontime(particle);
+            CalcCollisiontime(particle);
         }
         // end next gen code
     }
 
     randomSeed = random_seed;
 }
-
-//void __fastcall CGEmitter_SpawnParticles(CGEmitter* _this, int dummy, float dt, float intensity, bool isContrail)
-//{
-//    float* mLayoutPtr; // esi
-//    int v6; // edi
-//    int v7; // ebx
-//    int v8; // eax
-//    double v9; // st7
-//    int v10; // ecx
-//    double v11; // st7
-//    double v12; // st7
-//    double v13; // st7
-//    double v14; // st6
-//    char v15; // bl
-//    char* AttributePointer_Shim; // eax
-//    char* v17; // eax
-//    char* v18; // eax
-//    char v19; // cl
-//    int v20; // eax
-//    NGParticle* v21; // esi
-//    float* v22; // eax
-//    float v23; // edx
-//    double v24; // st7
-//    double v25; // st7
-//    float* v26; // edi
-//    double v27; // st7
-//    double v28; // st7
-//    float* v29; // edi
-//    double v30; // st7
-//    double v31; // st7
-//    float* v32; // edi
-//    double v33; // st7
-//    float* v34; // edi
-//    double v35; // st7
-//    double v36; // st6
-//    float* v37; // edi
-//    double v38; // st7
-//    float* v39; // edi
-//    double v40; // st7
-//    float* v41; // edi
-//    float v42; // eax
-//    float v43; // ecx
-//    double v44; // st7
-//    float v45; // edx
-//    float v46; // eax
-//    double v47; // st7
-//    float v48; // ecx
-//    float v49; // edx
-//    double v50; // st7
-//    unsigned __int8 v51; // al
-//    int v52; // edx
-//    unsigned __int8 v53; // al
-//    char v54; // cl
-//    char v55; // dl
-//    unsigned __int8 v56; // al
-//    double v57; // st7
-//    NGParticle::Flags flags; // al
-//    float v59; // [esp-54h] [ebp-100h]
-//    float v60; // [esp-4Ch] [ebp-F8h]
-//    float v61; // [esp-3Ch] [ebp-E8h]
-//    float* v62; // [esp-34h] [ebp-E0h]
-//    float v63; // [esp-28h] [ebp-D4h]
-//    float v64; // [esp-20h] [ebp-CCh]
-//    unsigned int v65; // [esp+0h] [ebp-ACh] BYREF
-//    float v66; // [esp+4h] [ebp-A8h]
-//    char v67; // [esp+9h] [ebp-A3h]
-//    unsigned __int8 v68; // [esp+Ah] [ebp-A2h]
-//    char v69; // [esp+Bh] [ebp-A1h]
-//    float v70; // [esp+Ch] [ebp-A0h]
-//    float v71; // [esp+10h] [ebp-9Ch]
-//    int v72; // [esp+14h] [ebp-98h]
-//    float v73; // [esp+18h] [ebp-94h]
-//    float v74; // [esp+1Ch] [ebp-90h]
-//    float v75; // [esp+20h] [ebp-8Ch]
-//    float v76; // [esp+24h] [ebp-88h]
-//    float v77; // [esp+28h] [ebp-84h]
-//    float v78; // [esp+2Ch] [ebp-80h]
-//    float v79; // [esp+30h] [ebp-7Ch] BYREF
-//    float v80; // [esp+34h] [ebp-78h]
-//    float v81; // [esp+38h] [ebp-74h]
-//    float v82; // [esp+3Ch] [ebp-70h]
-//    int v83; // [esp+40h] [ebp-6Ch]
-//    float v84; // [esp+44h] [ebp-68h]
-//    float v85; // [esp+48h] [ebp-64h]
-//    float v86; // [esp+4Ch] [ebp-60h]
-//    float v87; // [esp+50h] [ebp-5Ch]
-//    float v88; // [esp+54h] [ebp-58h]
-//    float v89[4]; // [esp+5Ch] [ebp-50h] BYREF
-//    char v90[64]; // [esp+6Ch] [ebp-40h] BYREF
-//
-//    if (intensity > (double)flt_9C248C && dt > (double)flt_9C248C)
-//    {
-//        memcpy(v90, &_this->mLocalWorld, sizeof(v90));
-//        mLayoutPtr = (float*)_this->mEmitterDef.mLayoutPtr;
-//        Attrib::Gen::fuelcell_emitter::_LayoutStruct* emitterThing = (Attrib::Gen::fuelcell_emitter::_LayoutStruct *)_this->mEmitterDef.mLayoutPtr;
-//        v65 = randomSeed;
-//        v78 = mLayoutPtr[27] - mLayoutPtr[27] * mLayoutPtr[35];
-//        v6 = (int)(mLayoutPtr[20] * flt_9C92F0);
-//        v7 = (int)(mLayoutPtr[21] * flt_9C92F0);
-//        v8 = (int)(mLayoutPtr[22] * flt_9C92F0);
-//        v9 = mLayoutPtr[23] * flt_9C92F0;
-//        v72 = v8;
-//        v10 = (int)(v9);
-//        if (intensity != flt_9C2478)
-//        {
-//            v11 = intensity * flt_9EA540;
-//            if (flt_9EA540 < v11)
-//                v11 = flt_9EA540;
-//            v10 = (int)(v10, v11);
-//        }
-//        v83 = v72 | ((v7 | ((v6 | (v10 << 8)) << 8)) << 8);
-//        if (intensity <= (double)flt_9C2478)
-//            v12 = flt_9C2478;
-//        else
-//            v12 = intensity;
-//        v13 = v12 * *((float*)_this->mEmitterDef.mLayoutPtr + 36) * *((float*)_this->mEmitterDef.mLayoutPtr + 28);
-//        if (intensity <= (double)flt_9C2478)
-//            v14 = flt_9C2478;
-//        else
-//            v14 = intensity;
-//        v15 = 0;
-//        v71 = v14 * *((float*)_this->mEmitterDef.mLayoutPtr + 36) - v13 * flt_9C2C44;
-//        AttributePointer_Shim = ((char* (__thiscall*)(Attrib::CarbonInstance*, int, int))Attrib_Instance_GetAttributePointer_Shim)(&_this->mEmitterDef, 0x28638D89u, 0);
-//        if (!AttributePointer_Shim)
-//            AttributePointer_Shim = (char*)Attrib::DefaultDataArea();
-//        v68 = *AttributePointer_Shim;
-//        v17 = ((char* (__thiscall*)(Attrib::CarbonInstance*, int, int))Attrib_Instance_GetAttributePointer_Shim)(&_this->mEmitterDef, 0xD2603865, 0);
-//        if (!v17)
-//            v17 = (char*)Attrib::DefaultDataArea();
-//        v67 = *v17;
-//        v18 = ((char*(__thiscall*)(Attrib::CarbonInstance*, int, int))Attrib_Instance_GetAttributePointer_Shim)(&_this->mEmitterDef, 0xE2CC8106, 0);
-//        if (!v18)
-//            v18 = (char*)Attrib::DefaultDataArea();
-//        v19 = *v18;
-//        v20 = *((unsigned __int8*)_this->mEmitterDef.mLayoutPtr + 148);
-//        v69 = v19;
-//        v72 = v20;
-//        if (v20)
-//        {
-//            v15 = 1;
-//            v72 = v20 - 1;
-//        }
-//        v66 = 0.0;
-//        v85 = dt / v71;
-//        while (v71 != flt_9C248C)
-//        {
-//            v71 = v71 - flt_9C2478;
-//            if (gParticleList.mNumParticles >= MaxParticles)
-//                break;
-//            v21 = &gParticleList.mParticles[gParticleList.mNumParticles++];
-//            if (!v21)
-//                break;
-//            v22 = (float*)_this->mEmitterDef.mLayoutPtr;
-//            v23 = v22[34];
-//            v70 = v22[33];
-//            v84 = v23;
-//            v24 = bRandom_Float_Int(v23, (int)&v65);
-//            v25 = v24 + v70;
-//            v70 = v25;
-//            if (v25 < flt_9C248C)
-//                break;
-//            if (v70 >= (double)flt_9C92F0)
-//                v70 = 255.0;
-//            v26 = (float*)_this->mEmitterDef.mLayoutPtr;
-//            v27 = bRandom_Float_Int(v26[4], (int)&v65);
-//            v28 = v26[4] - (v27 + v27);
-//            v29 = (float*)_this->mEmitterDef.mLayoutPtr;
-//            v64 = v29[5];
-//            v86 = flt_9C2478 - v28;
-//            v30 = bRandom_Float_Int(v64, (int)&v65);
-//            v31 = v29[5] - (v30 + v30);
-//            v32 = (float*)_this->mEmitterDef.mLayoutPtr;
-//            v63 = v32[6];
-//            v87 = flt_9C2478 - v31;
-//            v33 = bRandom_Float_Int(v63, (int)&v65);
-//            v62 = (float*)((char*)_this->mEmitterDef.mLayoutPtr + 64);
-//            v88 = flt_9C2478 - (v32[6] - (v33 + v33));
-//            v73 = *(v62 - 4) * _this->mVel.x;
-//            v74 = *(v62 - 3) * _this->mVel.y;
-//            v75 = *(v62 - 2) * _this->mVel.z;
-//            ((void(__cdecl*)(float*, UMath::Matrix4*, float*))sub_478200)(v62, &_this->mLocalWorld, v89);
-//            v34 = (float*)_this->mEmitterDef.mLayoutPtr;
-//            v61 = v34[31];
-//            v75 = v89[2] + v75;
-//            v76 = v89[3] + v76;
-//            v73 = (v89[0] + v73) * v86;
-//            v74 = (v89[1] + v74) * v87;
-//            v75 = v75 * v88;
-//            v35 = bRandom_Float_Int(v61, (int)&v65);
-//            v36 = v34[29] - v34[31];
-//            v37 = (float*)_this->mEmitterDef.mLayoutPtr;
-//            v77 = v35 + v35 + v36;
-//            v38 = bRandom_Float_Int(v37[8], (int)&v65) - v37[8] * flt_9C2888 + *v37;
-//            v39 = (float*)_this->mEmitterDef.mLayoutPtr;
-//            v60 = v39[9];
-//            v79 = v38;
-//            v40 = bRandom_Float_Int(v60, (int)&v65) - v39[9] * flt_9C2888 + v39[1];
-//            v41 = (float*)_this->mEmitterDef.mLayoutPtr;
-//            v59 = v41[10];
-//            v80 = v40;
-//            v81 = bRandom_Float_Int(v59, (int)&v65) - v41[10] * flt_9C2888 + v41[2];
-//            v82 = 1.0;
-//            ((void(__cdecl*)(float*, char*, float*))sub_6012B0)(&v79, v90, &v79);
-//            v42 = v74;
-//            v43 = v75;
-//            v44 = v73 * v66 + v79;
-//            v21->vel.x = v73;
-//            v45 = v78;
-//            v21->initialPos.x = v44;
-//            v21->vel.y = v42;
-//            v46 = v45;
-//            v47 = v74 * v66;
-//            v21->vel.z = v43;
-//            v48 = v66;
-//            v21->remainingLife = v45;
-//            v49 = v77;
-//            v50 = v47 + v80;
-//            v21->life = v46;
-//            v21->age = v48;
-//            v21->initialPos.y = v50;
-//            v21->gravity = v49;
-//            v21->initialPos.z = v77 * v66 * v66 + v75 * v66 + v81;
-//            v21->elasticity = (int)(*((float*)_this->mEmitterDef.mLayoutPtr + 32));
-//            v51 = (int)(*((float*)_this->mEmitterDef.mLayoutPtr + 30));
-//            v52 = v83;
-//            v21->size = v51;
-//            v21->color = v52;
-//            v21->flags = (NGParticle::Flags)v15;
-//            if ((v15 & 1) != 0)
-//            {
-//                v21->uv[0] = v72;
-//                v21->uv[1] = (int)(*((float*)_this->mTextureUVs.mLayoutPtr + 1));
-//                v21->uv[2] = (int)(*((float*)_this->mTextureUVs.mLayoutPtr + 3));
-//                v21->startX = bRandom_Int_Int(255, &v65);
-//                v21->startY = bRandom_Int_Int(255, &v65);
-//                v53 = bRandom_Int_Int(255, &v65);
-//                v54 = v67;
-//                v55 = v69;
-//                v21->startZ = v53;
-//                v21->rotX = v68;
-//                v21->rotY = v54;
-//                v21->rotZ = v55;
-//            }
-//            else
-//            {
-//                v21->uv[0] = (int)(*((float*)_this->mTextureUVs.mLayoutPtr + 1) * flt_9C92F0);
-//                v21->uv[1] = (int)(*((float*)_this->mTextureUVs.mLayoutPtr + 3) * flt_9C92F0);
-//                v21->uv[2] = (int)(*((float*)_this->mTextureUVs.mLayoutPtr + 2) * flt_9C92F0);
-//                v56 = (int)(*(float*)_this->mTextureUVs.mLayoutPtr * flt_9C92F0);
-//                v57 = v70;
-//                v21->uv[3] = v56;
-//                v21->startX = (int)(v57);
-//            }
-//            flags = v21->flags;
-//            v66 = v66 + v85;
-//            //if ((flags & 4) == 0 && !isContrail)
-//            //    CalcCollisiontime(v21);
-//        }
-//        randomSeed = v65;
-//    }
-//}
-
-void __declspec(naked) Attrib_Gen_fuelcell_emitter_constructor()
-{
-    _asm
-    {
-                sub esp, 10h
-                mov     eax, [esp+18h]
-                push    esi
-                mov     esi, ecx
-                mov     ecx, [esp+18h]
-                push    eax
-                push    ecx
-                mov     ecx, esi
-                mov     [esp+0Ch], esi
-                call    Attrib_Instance ; Attrib::Instance::Instance((Attrib::Collection const *,ulong))
-                mov     eax, [esi+8]
-                test    eax, eax
-                mov     dword ptr [esp+10h], 0
-                jnz     loc_73EEFD
-                push    98h ; '˜'
-                call    Attrib_DefaultDataArea ; Attrib::DefaultDataArea((uint))
-                add     esp, 4
-                mov     [esi+8], eax
-
-loc_73EEFD:                             ; CODE XREF: Attrib::Gen::fuelcell_emitter::fuelcell_emitter(Attrib::Collection const *,uint)+3B↑j
-                mov     eax, esi
-                pop     esi
-                add     esp, 10h
-                retn    8
-    }
-}
-
-
-char fuelcell_attrib_buffer[20];
-void*(__thiscall* Attrib_Gen_fuelcell_emitter_constructor_Abstract)(void* AttribInstance, uint32_t unk1, uint32_t unk2) = (void*(__thiscall*)(void*, uint32_t, uint32_t)) & Attrib_Gen_fuelcell_emitter_constructor;
-void* __stdcall Attrib_Gen_fuelcell_emitter_constructor_shim(uint32_t unk1, uint32_t unk2)
-{
-    uint32_t that;
-    _asm mov that, ecx
-
-    memset(fuelcell_attrib_buffer, 0, 20);
-    auto result = Attrib_Gen_fuelcell_emitter_constructor_Abstract((void*)fuelcell_attrib_buffer, unk1, unk2);
-    
-    memcpy((void*)that, (void*)(&fuelcell_attrib_buffer[4]), 16);
-    
-    return result;
-}
-
-void __declspec(naked) sub_737610()
-{
-    _asm
-    {
-                sub esp, 10h
-                mov     eax, [esp+18h]
-                push    esi
-                mov     esi, ecx
-                mov     ecx, [esp+18h]
-                push 0
-                push    eax
-                push    ecx
-                mov     ecx, esi
-                mov     [esp+0Ch], esi
-                call    Attrib_Instance_Refspec; Attrib::Instance::Instance((Attrib::RefSpec const &,ulong))
-                mov     eax, [esi+8]
-                test    eax, eax
-                mov     dword ptr [esp+10h], 0
-                jnz     loc_73765A
-                push    10h
-                call    Attrib_DefaultDataArea ; Attrib::DefaultDataArea((uint))
-                add     esp, 4
-                mov     [esi+8], eax
-
-loc_73765A:                             ; CODE XREF: sub_737610+3B↑j
-                mov     eax, esi
-                pop     esi
-                add     esp, 10h
-                retn    8
-    }
-}
-
-char fuelcell_attrib_buffer2[20];
-
-void* (__thiscall* sub_737610_Abstract)(void* AttribInstance, uint32_t unk1, uint32_t unk2) = (void* (__thiscall*)(void*, uint32_t, uint32_t)) & sub_737610;
-void* __stdcall sub_737610_shim(uint32_t unk1, uint32_t unk2)
-{
-    uint32_t that;
-    _asm mov that, ecx
-
-    memset(fuelcell_attrib_buffer2, 0, 20);
-    auto result = sub_737610_Abstract((void*)fuelcell_attrib_buffer2, unk1, unk2);
-
-    memcpy((void*)that, (void*)(&fuelcell_attrib_buffer2[4]), 16);
-
-    return result;
-}
-
-//void __declspec(naked) CGEmitter_CGEmitter()
-//{
-//    _asm
-//    {
-//          sub esp, 10h
-//          mov     eax, [esp+14h]
-//          push    ebx
-//          push    esi
-//          push    edi
-//          push    0
-//          mov     ebx, ecx
-//          push    eax
-//          mov     [esp+14h], ebx
-//          call    Attrib_Gen_fuelcell_emitter_constructor_shim; Attrib::Gen::fuelcell_emitter::fuelcell_emitter(Attrib::Collection const *,uint)
-//          mov     ecx, [ebx+4]
-//          add     ecx, 60h ; '`'
-//          push    0
-//          push    ecx
-//          lea     ecx, [ebx+10h]
-//          mov     dword ptr [esp+20h], 0
-//          call    sub_737610_shim
-//          mov     eax, [esp+24h]
-//          lea     esi, [eax+14h]
-//          add     eax, 4
-//          lea     edi, [ebx+30h]
-//          mov     ecx, 10h
-//          rep movsd
-//          mov     ecx, [eax]
-//          lea     edx, [ebx+20h]
-//          mov     [edx], ecx
-//          mov     ecx, [eax+4]
-//          mov     [edx+4], ecx
-//          mov     ecx, [eax+8]
-//          mov     [edx+8], ecx
-//          mov     eax, [eax+0Ch]
-//          pop     edi
-//          mov     [edx+0Ch], eax
-//          pop     esi
-//          mov     eax, ebx
-//          pop     ebx
-//          add     esp, 10h
-//          retn    8
-//    }
-//}
-
-char fuelcell_attrib_buffer3[20];
-void __stdcall Attrib_Gen_fuelcell_effect_constructor(void* collection, unsigned int msgPort)
-{
-    uint32_t that;
-    _asm mov that, ecx
-    //_asm int 3
-
-    memset(fuelcell_attrib_buffer3, 0, 20);
-
-    Attrib_Instance_MW((void*)fuelcell_attrib_buffer3, collection, msgPort, NULL);
-
-    memcpy((void*)that, (void*)(&fuelcell_attrib_buffer3[4]), 16);
-
-    if (!*(uint32_t*)(that + 4))
-        *(uint32_t*)(that + 4) = (uint32_t)Attrib_DefaultDataArea(1);
-}
-
-unsigned int __stdcall Attrib_Gen_fuelcell_effect_Num_NGEmitter()
-{
-    uint32_t that;
-    _asm mov that, ecx
-
-    Attrib::Attribute* v1; // eax
-    uint32_t v2; // esi
-    char v4[16]; // [esp+4h] [ebp-1Ch] BYREF
-
-    memset(fuelcell_attrib_buffer3, 0, 20);
-    memcpy(&(fuelcell_attrib_buffer3[4]), (void*)that, 16);
-
-    v1 = (Attrib::Attribute*)Attrib_Instance_Get(fuelcell_attrib_buffer3, (unsigned int)v4, 0xB0D98A89);
-    v2 = v1->GetLength();
-    //v2 = (uint32_t)Attrib_Attribute_GetLength((void*)v1);
-
-
-    return v2;
-}
-
-//void __declspec(naked) NGEffect_NGEffect()
-//{
-//    _asm
-//    {
-//        sub     esp, 84h
-//        push    ebp
-//        push    edi
-//        mov     edi, [esp + 90h]
-//        mov     eax, [edi + 54h]
-//        push    0
-//        mov     ebp, ecx
-//        push    eax
-//        mov[esp + 14h], ebp
-//        call    Attrib_Gen_fuelcell_effect_constructor; Attrib::Gen::fuelcell_effect::fuelcell_effect(Attrib::Collection const*, uint)
-//        cmp     dword ptr[ebp + 4], 0
-//        mov     dword ptr[esp + 88h], 0
-//        jz      loc_74A36E
-//        push    esi
-//        mov     ecx, ebp
-//        call    Attrib_Gen_fuelcell_effect_Num_NGEmitter; Attrib::Gen::fuelcell_effect::Num_NGEmitter(void)
-//        xor esi, esi
-//        test    eax, eax
-//        mov[esp + 0Ch], eax
-//        jle     loc_74A352
-//        lea     ecx, [ecx + 0]
-//
-//loc_74A2C0: ; CODE XREF : NGEffect::NGEffect(XenonEffectDef const&, float) + EC↓j
-//        push    esi
-//        push    0B0D98A89h
-//        mov     ecx, ebp
-//        call    Attrib_Instance_GetAttributePointer_Shim
-//        test    eax, eax
-//        jnz     loc_74A2DB
-//        push    0Ch
-//        call    Attrib_DefaultDataArea
-//        add     esp, 4
-//
-//loc_74A2DB: ; CODE XREF : NGEffect::NGEffect(XenonEffectDef const&, float) + 6F↑j
-//        mov     ecx, eax
-//        call    Attrib_RefSpec_GetCollection
-//        push    edi
-//        push    eax
-//        lea     ecx, [esp + 1Ch]
-//        call    CGEmitter::CGEmitter; CGEmitter::CGEmitter(Attrib::Collection const*, XenonEffectDef const&)
-//        lea     ecx, [esp + 14h]
-//        call fuelcell_emitter_bridge
-//        mov     eax, [edi + 58h]
-//        test    eax, eax
-//        mov     byte ptr[esp + 8Ch], 1
-//        jnz     loc_74A30B // jnz
-//        mov     ecx, [edi]
-//        mov     edx, [esp + 98h]
-//        push    1
-//        push    ecx
-//        push    edx
-//        jmp     loc_74A31A
-//; -------------------------------------------------------------------------- -
-//
-//loc_74A30B: ; CODE XREF : NGEffect::NGEffect(XenonEffectDef const&, float) + 9A↑j
-//        mov     eax, [esp + 98h]
-//        push    0; char
-//        push    3F800000h; float
-//        push    eax; float
-//
-//loc_74A31A: ; CODE XREF : NGEffect::NGEffect(XenonEffectDef const&, float) + A9↑j
-//        lea     ecx, [esp + 20h]
-//        call    CGEmitter::SpawnParticles; CGEmitter::SpawnParticles(float, float)
-//        call fuelcell_emitter_bridge_restore
-//        lea     ecx, [esp + 24h]
-//        mov     byte ptr[esp + 8Ch], 2
-//        call    Attrib_Instance_Dtor_Shim; Attrib::Instance::~Instance((void))
-//        lea     ecx, [esp + 14h]
-//        mov     byte ptr[esp + 8Ch], 0
-//        call    Attrib_Instance_Dtor_Shim; Attrib::Instance::~Instance((void))
-//        mov     eax, [esp + 0Ch]
-//        inc     esi
-//        cmp     esi, eax
-//        jl      loc_74A2C0
-//
-//loc_74A352: ; CODE XREF : NGEffect::NGEffect(XenonEffectDef const&, float) + 57↑j
-//        mov     eax, ebp
-//        pop     esi
-//
-//loc_74A355: ; CODE XREF : NGEffect::NGEffect(XenonEffectDef const&, float) + 110↓j
-//        pop     edi
-//        pop     ebp
-//        add     esp, 84h
-//
-//        retn    8
-//loc_74A36E:
-//        mov     eax, ebp
-//        jmp     short loc_74A355
-//    }
-//}
 
 class NGEffect
 {
@@ -2155,10 +1592,6 @@ void XSpriteManager::AddParticle(eView* view, NGParticle* particleList, unsigned
     {
         NGParticle* particle = &particleList[i];
         
-        //float x = (particle->age * particle->vel.x) + particle->initialPos.x;
-        //float y = (particle->age * particle->vel.y) + particle->initialPos.y;
-        //float z = (particle->age * particle->vel.z) + particle->initialPos.z + particle->age * particle->age * particle->gravity;
-
         UMath::Vector3 startPos;
         UMath::Vector3 endPos;
         float endAge;
@@ -2181,8 +1614,12 @@ void XSpriteManager::AddParticle(eView* view, NGParticle* particleList, unsigned
                 UMath::fpu::ScaleAdd(&particle->vel, endAge, &particle->initialPos, &endPos);
                 endPos.z += endAge * endAge * particle->gravity;
 
-                //if (bFadeOutParticles)
-                //    ((uint8_t*)&color)[3] = (uint8_t)(((uint8_t*)&color)[3] * (1 - (pow((particle->age / particle->life), 1.1f)))); // QOL feature
+                if (bFadeOutParticles && (particle->flags & NGParticle::Flags::SPAWN) == 0)
+                {
+                    uint8_t alpha = (color & 0xFF000000) >> 24;
+                    alpha *= 1 - std::powf(particle->age / (particle->life / 8191.0f), 3.0f);
+                    color = (color & 0x00FFFFFF) + (alpha << 24); // QOL feature
+                }
 
                 spark->v[0].position = startPos;
                 spark->v[0].color = color;
@@ -2194,12 +1631,6 @@ void XSpriteManager::AddParticle(eView* view, NGParticle* particleList, unsigned
                 spark->v[1].color = color;
                 spark->v[1].texcoord[0] = particle->uv[2] / 255.0f;
                 spark->v[1].texcoord[1] = particle->uv[1] / 255.0f;
-
-                //float offsetAge = (particle->length / 2048.0f) + particle->age;
-                //x = (offsetAge * particle->vel.x) + particle->initialPos.x;
-                //y = (offsetAge * particle->vel.y) + particle->initialPos.y;
-                //z = (offsetAge * particle->vel.z) + particle->initialPos.z;
-                //z += offsetAge * particle->gravity * offsetAge;
                 
                 spark->v[2].position = endPos;
                 spark->v[2].position.z += width;
