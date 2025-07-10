@@ -1211,21 +1211,20 @@ struct WCollisionMgr
 
 void CalcCollisiontime(NGParticle* particle)
 {
-    UMath::Vector4 point; // [esp+28h] [ebp-78h] OVERLAPPED BYREF
-    UMath::Vector4 endPoint;
+    UMath::Vector4 ray[2]; // [esp+28h] [ebp-78h] OVERLAPPED BYREF
     WCollisionMgr::WorldCollisionInfo collisionInfo; // [esp+48h] [ebp-58h] OVERLAPPED BYREF
     
     //particle->initialPos.z += 0.15f;
 
-    endPoint.x = -(particle->life * particle->vel.y + particle->initialPos.y);
-    endPoint.y = particle->life * particle->vel.z + particle->initialPos.z + particle->life * particle->life * particle->gravity;
-    endPoint.z = (particle->life * particle->vel.x) + particle->initialPos.x;
-    endPoint.w = 1.0f;
+    ray[1].x = -(particle->life * particle->vel.y + particle->initialPos.y);
+    ray[1].y = particle->life * particle->vel.z + particle->initialPos.z + particle->life * particle->life * particle->gravity;
+    ray[1].z = (particle->life * particle->vel.x) + particle->initialPos.x;
+    ray[1].w = 1.0f;
 
-    point.x = -particle->initialPos.y;
-    //point.y = particle->initialPos.z; // i guess it only works without it okay
-    point.z = particle->initialPos.x;
-    point.w = 1.0f;
+    ray[0].x = -particle->initialPos.y;
+    ray[0].y = particle->initialPos.z;
+    ray[0].z = particle->initialPos.x;
+    ray[0].w = 1.0f;
 
     //point.y += 0.15f;
 
@@ -1233,7 +1232,7 @@ void CalcCollisiontime(NGParticle* particle)
     WCollisionMgr collisionMgr;
     collisionMgr.fSurfaceExclusionMask = 0;
     collisionMgr.fPrimitiveMask = 3;
-    if (WCollisionMgr_CheckHitWorld(&collisionMgr, &point, &collisionInfo, 3u))
+    if (WCollisionMgr_CheckHitWorld(&collisionMgr, ray, &collisionInfo, 3u))
     {
         float newLife = 0.0f;
         float dist = ((particle->vel.z * particle->vel.z) - (((particle->initialPos.z - collisionInfo.fCollidePt.y) * particle->gravity) * 4.0f));
