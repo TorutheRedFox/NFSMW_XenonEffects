@@ -576,7 +576,7 @@ class XSpriteList
 {
 public:
     SpriteBuffer<Sprite, SpriteVert> mSprintListView[NumViews];
-    size_t mNumViews = NumViews;
+    size_t mNumViews = 0;
     size_t mCurrViewBuffer = 0;
     TextureInfo* mTexture = NULL;
 
