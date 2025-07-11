@@ -233,7 +233,7 @@ struct XenonEffectDef
     UMath::Vector4  vel;
     UMath::Matrix4  mat;
     Attrib::Collection* spec;
-    void* piggyback_effect;
+    struct EmitterGroup* piggyback_effect;
 };
 
 namespace bstl
@@ -269,7 +269,7 @@ namespace eastl
 }
 
 
-class XenonFXVec : public eastl::vector<XenonEffectDef, bstl::allocator>
+class XenonFXVec : public std::vector<XenonEffectDef>//public eastl::vector<XenonEffectDef, bstl::allocator>
 {
 };
 
@@ -676,416 +676,24 @@ void __declspec(naked) sub_736EA0()
     }
 }
 
-// EASTL List stuff Start
-void __declspec(naked) eastl_vector_uninitialized_copy_impl_XenonEffectDef()
-{
-    _asm
-    {
-                mov     eax, [esp+8]
-                mov     edx, [esp+10h]
-                push    ebx
-                mov     ebx, [esp+10h]
-                cmp     eax, ebx
-                jz      short loc_74C80E
-                push    esi
-                push    edi
-
-loc_74C7F3:                             ; CODE XREF: eastl::uninitialized_copy_impl<eastl::generic_iterator<XenonEffectDef *,void>,eastl::generic_iterator<XenonEffectDef *,void>>(eastl::generic_iterator<XenonEffectDef *,void>,eastl::generic_iterator<XenonEffectDef *,void>,eastl::generic_iterator<XenonEffectDef *,void>,eastl::integral_constant<bool,0>)+2A↓j
-                test    edx, edx
-                jz      short loc_74C802
-                mov     ecx, 17h
-                mov     esi, eax
-                mov     edi, edx
-                rep movsd
-
-loc_74C802:                             ; CODE XREF: eastl::uninitialized_copy_impl<eastl::generic_iterator<XenonEffectDef *,void>,eastl::generic_iterator<XenonEffectDef *,void>>(eastl::generic_iterator<XenonEffectDef *,void>,eastl::generic_iterator<XenonEffectDef *,void>,eastl::generic_iterator<XenonEffectDef *,void>,eastl::integral_constant<bool,0>)+15↑j
-                add     eax, 58h ; '\'
-                add     edx, 58h ; '\'
-                cmp     eax, ebx
-                jnz     short loc_74C7F3
-                pop     edi
-                pop     esi
-
-loc_74C80E:                             ; CODE XREF: eastl::uninitialized_copy_impl<eastl::generic_iterator<XenonEffectDef *,void>,eastl::generic_iterator<XenonEffectDef *,void>>(eastl::generic_iterator<XenonEffectDef *,void>,eastl::generic_iterator<XenonEffectDef *,void>,eastl::generic_iterator<XenonEffectDef *,void>,eastl::integral_constant<bool,0>)+F↑j
-                mov     eax, [esp+8]
-                mov     [eax], edx
-                pop     ebx
-                retn
-    }
-}
-
-void __declspec(naked) eastl_vector_erase_XenonEffectDef()
-{
-    _asm
-    {
-                push    ecx
-                push    ebx
-                mov     ebx, [ecx+4]
-                push    ebp
-                mov     ebp, [esp+14h]
-                cmp     ebp, ebx
-                push    esi
-                mov     esi, [esp+14h]
-                mov     [esp+0Ch], ecx
-                mov     edx, esi
-                mov     eax, ebp
-                jz      short loc_752BFE
-                push    edi
-                lea     esp, [esp+0]
-
-loc_752BE0:                             ; CODE XREF: eastl::vector<XenonEffectDef,bstl::allocator>::erase(XenonEffectDef *,XenonEffectDef *)+33↓j
-                mov     esi, eax
-                mov     edi, edx
-                add     eax, 58h ; '\'
-                mov     ecx, 17h
-                add     edx, 58h ; '\'
-                cmp     eax, ebx
-                rep movsd
-                jnz     short loc_752BE0
-                mov     ecx, [esp+10h]
-                mov     esi, [esp+18h]
-                pop     edi
-
-loc_752BFE:                             ; CODE XREF: eastl::vector<XenonEffectDef,bstl::allocator>::erase(XenonEffectDef *,XenonEffectDef *)+19↑j
-                sub     ebp, esi
-                mov     eax, 4DE9BD37h
-                imul    ebp
-                sub     edx, ebp
-                sar     edx, 6
-                mov     eax, edx
-                shr     eax, 1Fh
-                add     eax, edx
-                mov     edx, [ecx+4]
-                imul    eax, 58h ; '\'
-                add     edx, eax
-                mov     eax, esi
-                pop     esi
-                pop     ebp
-                mov     [ecx+4], edx
-                pop     ebx
-                pop     ecx
-                retn    8
-    }
-}
-
-void __declspec(naked) eastl_vector_DoInsertValue_XenonEffectDef()
-{
-    _asm
-    {
-                sub     esp, 8
-                push    ebx
-                push    ebp
-                push    esi
-                mov     ebx, ecx
-                mov     eax, [ebx+8]
-                push    edi
-                mov     edi, [ebx+4]
-                cmp     edi, eax
-                jz      short loc_752CAB
-                mov     eax, [esp+20h]
-                mov     ebp, [esp+1Ch]
-                cmp     eax, ebp
-                mov     [esp+20h], eax
-                jb      short loc_752C5E
-                cmp     eax, edi
-                jnb     short loc_752C5E
-                add     eax, 58h ; '\'
-                mov     [esp+20h], eax
-
-loc_752C5E:                             ; CODE XREF: eastl::vector<XenonEffectDef,bstl::allocator>::DoInsertValue(XenonEffectDef *,XenonEffectDef const &)+21↑j
-                                        ; eastl::vector<XenonEffectDef,bstl::allocator>::DoInsertValue(XenonEffectDef *,XenonEffectDef const &)+25↑j
-                test    edi, edi
-                jz      short loc_752C6C
-                lea     esi, [edi-58h]
-                mov     ecx, 17h
-                rep movsd
-
-loc_752C6C:                             ; CODE XREF: eastl::vector<XenonEffectDef,bstl::allocator>::DoInsertValue(XenonEffectDef *,XenonEffectDef const &)+30↑j
-                mov     edx, [ebx+4]
-                lea     eax, [edx-58h]
-                cmp     eax, ebp
-                jz      short loc_752C8B
-
-loc_752C76:                             ; CODE XREF: eastl::vector<XenonEffectDef,bstl::allocator>::DoInsertValue(XenonEffectDef *,XenonEffectDef const &)+59↓j
-                sub     eax, 58h ; '\'
-                sub     edx, 58h ; '\'
-                cmp     eax, ebp
-                mov     ecx, 17h
-                mov     esi, eax
-                mov     edi, edx
-                rep movsd
-                jnz     short loc_752C76
-
-loc_752C8B:                             ; CODE XREF: eastl::vector<XenonEffectDef,bstl::allocator>::DoInsertValue(XenonEffectDef *,XenonEffectDef const &)+44↑j
-                mov     esi, [esp+20h]
-                mov     edi, ebp
-                mov     ecx, 17h
-                rep movsd
-                mov     eax, [ebx+4]
-                pop     edi
-                pop     esi
-                add     eax, 58h ; '\'
-                pop     ebp
-                mov     [ebx+4], eax
-                pop     ebx
-                add     esp, 8
-                retn    8
-; ---------------------------------------------------------------------------
-
-loc_752CAB:                             ; CODE XREF: eastl::vector<XenonEffectDef,bstl::allocator>::DoInsertValue(XenonEffectDef *,XenonEffectDef const &)+11↑j
-                sub     edi, [ebx]
-                mov     eax, 0B21642C9h
-                imul    edi
-                add     edx, edi
-                sar     edx, 6
-                mov     eax, edx
-                shr     eax, 1Fh
-                add     eax, edx
-                jz      short loc_752CE9
-                lea     edi, [eax+eax]
-                test    edi, edi
-                mov     [esp+14h], edi
-                jz      short loc_752CF7
-
-loc_752CCD:                             ; CODE XREF: eastl::vector<XenonEffectDef,bstl::allocator>::DoInsertValue(XenonEffectDef *,XenonEffectDef const &)+C5↓j
-                mov     eax, edi
-                imul    eax, 58h ; '\'
-                test    eax, eax
-                jz      short loc_752CF7
-                push    0
-                push    eax
-                mov     ecx, FASTMEM_ADDR
-                call    FastMem_Alloc ; FastMem::Alloc((uint,char const *))
-                mov     [esp+10h], eax
-                jmp     short loc_752CFF
-; ---------------------------------------------------------------------------
-
-loc_752CE9:                             ; CODE XREF: eastl::vector<XenonEffectDef,bstl::allocator>::DoInsertValue(XenonEffectDef *,XenonEffectDef const &)+90↑j
-                mov     dword ptr [esp+14h], 1
-                mov     edi, [esp+14h]
-                jmp     short loc_752CCD
-; ---------------------------------------------------------------------------
-
-loc_752CF7:                             ; CODE XREF: eastl::vector<XenonEffectDef,bstl::allocator>::DoInsertValue(XenonEffectDef *,XenonEffectDef const &)+9B↑j
-                                        ; eastl::vector<XenonEffectDef,bstl::allocator>::DoInsertValue(XenonEffectDef *,XenonEffectDef const &)+A4↑j
-                mov     dword ptr [esp+10h], 0
-
-loc_752CFF:                             ; CODE XREF: eastl::vector<XenonEffectDef,bstl::allocator>::DoInsertValue(XenonEffectDef *,XenonEffectDef const &)+B7↑j
-                mov     ecx, [esp+1Ch]
-                mov     edx, [esp+10h]
-                mov     ebp, [esp+1Ch]
-                mov     eax, [ebx]
-                push    ecx
-                push    edx
-                push    ebp
-                push    eax
-                lea     eax, [esp+2Ch]
-                push    eax
-                call    eastl_vector_uninitialized_copy_impl_XenonEffectDef
-                mov     eax, [esp+30h]
-                add     esp, 14h
-                test    eax, eax
-                jz      short loc_752D37
-                mov     esi, [esp+20h]
-                mov     ecx, 17h
-                mov     edi, eax
-                rep movsd
-                mov     edi, [esp+14h]
-
-loc_752D37:                             ; CODE XREF: eastl::vector<XenonEffectDef,bstl::allocator>::DoInsertValue(XenonEffectDef *,XenonEffectDef const &)+F4↑j
-                mov     edx, [esp+1Ch]
-                mov     ecx, [ebx+4]
-                push    edx
-                add     eax, 58h ; '\'
-                push    eax
-                push    ecx
-                lea     eax, [esp+28h]
-                push    ebp
-                push    eax
-                call    eastl_vector_uninitialized_copy_impl_XenonEffectDef
-                mov     esi, [ebx]
-                add     esp, 14h
-                test    esi, esi
-                jz      short loc_752D81
-                mov     ecx, [ebx+8]
-                sub     ecx, esi
-                mov     eax, 0B21642C9h
-                imul    ecx
-                add     edx, ecx
-                sar     edx, 6
-                mov     ecx, edx
-                shr     ecx, 1Fh
-                add     ecx, edx
-                imul    ecx, 58h ; '\'
-                push    0
-                push    ecx
-                push    esi
-                mov     ecx, FASTMEM_ADDR
-                call    FastMem_Free ; FastMem::Free((void *,uint,char const *))
-
-loc_752D81:                             ; CODE XREF: eastl::vector<XenonEffectDef,bstl::allocator>::DoInsertValue(XenonEffectDef *,XenonEffectDef const &)+126↑j
-                mov     eax, [esp+10h]
-                imul    edi, 58h ; '\'
-                mov     edx, [esp+1Ch]
-                add     edi, eax
-                mov     [ebx+8], edi
-                pop     edi
-                pop     esi
-                pop     ebp
-                mov     [ebx], eax
-                mov     [ebx+4], edx
-                pop     ebx
-                add     esp, 8
-                retn    8
-    }
-}
-
-void __declspec(naked) eastl_vector_reserve_XenonEffectDef()
-{
-    _asm
-    {
-                push    ebx
-                mov     ebx, [esp+8]
-                push    ebp
-                push    esi
-                mov     esi, ecx
-                mov     ebp, [esi]
-                mov     ecx, [esi+8]
-                sub     ecx, ebp
-                mov     eax, 0B21642C9h
-                imul    ecx
-                add     edx, ecx
-                sar     edx, 6
-                mov     eax, edx
-                shr     eax, 1Fh
-                add     eax, edx
-                cmp     ebx, eax
-                jbe     loc_752858
-                test    ebx, ebx
-                mov     ecx, [esi+4]
-                push    edi
-                mov     [esp+14h], ecx
-                jz      short loc_7527E1
-                mov     eax, ebx
-                imul    eax, 58h ; '\'
-                test    eax, eax
-                jz      short loc_7527E1
-                push    0
-                push    eax
-                mov     ecx, FASTMEM_ADDR
-                call    FastMem_Alloc ; FastMem::Alloc((uint,char const *))
-                mov     edi, eax
-                jmp     short loc_7527E3
-; ---------------------------------------------------------------------------
-
-loc_7527E1:                             ; CODE XREF: eastl::vector<XenonEffectDef,bstl::allocator>::reserve(uint)+35↑j
-                                        ; eastl::vector<XenonEffectDef,bstl::allocator>::reserve(uint)+3E↑j
-                xor     edi, edi
-
-loc_7527E3:                             ; CODE XREF: eastl::vector<XenonEffectDef,bstl::allocator>::reserve(uint)+4F↑j
-                mov     edx, [esp+14h]
-                mov     eax, [esp+14h]
-                push    edx
-                push    edi
-                push    eax
-                lea     ecx, [esp+20h]
-                push    ebp
-                push    ecx
-                call    eastl_vector_uninitialized_copy_impl_XenonEffectDef ; eastl::uninitialized_copy_impl<eastl::generic_iterator<XenonEffectDef *,void>,eastl::generic_iterator<XenonEffectDef *,void>>(eastl::generic_iterator<XenonEffectDef *,void>,eastl::generic_iterator<XenonEffectDef *,void>,eastl::generic_iterator<XenonEffectDef *,void>,eastl::integral_constant<bool,0>)
-                mov     ebp, [esi]
-                add     esp, 14h
-                test    ebp, ebp
-                jz      short loc_75282B
-                mov     ecx, [esi+8]
-                sub     ecx, ebp
-                mov     eax, 0B21642C9h
-                imul    ecx
-                add     edx, ecx
-                sar     edx, 6
-                mov     eax, edx
-                shr     eax, 1Fh
-                add     eax, edx
-                imul    eax, 58h ; '\'
-                push    0
-                push    eax
-                push    ebp
-                mov     ecx, FASTMEM_ADDR
-                call    FastMem_Free ; FastMem::Free((void *,uint,char const *))
-
-loc_75282B:                             ; CODE XREF: eastl::vector<XenonEffectDef,bstl::allocator>::reserve(uint)+70↑j
-                mov     edx, [esi]
-                imul    ebx, 58h ; '\'
-                mov     ecx, [esi+4]
-                sub     ecx, edx
-                mov     eax, 0B21642C9h
-                imul    ecx
-                add     edx, ecx
-                sar     edx, 6
-                mov     eax, edx
-                shr     eax, 1Fh
-                add     eax, edx
-                imul    eax, 58h ; '\'
-                add     eax, edi
-                add     ebx, edi
-                mov     [esi], edi
-                mov     [esi+4], eax
-                mov     [esi+8], ebx
-                pop     edi
-
-loc_752858:                             ; CODE XREF: eastl::vector<XenonEffectDef,bstl::allocator>::reserve(uint)+25↑j
-                pop     esi
-                pop     ebp
-                pop     ebx
-                retn    4
-    }
-}
-
-void(__thiscall* eastl_vector_DoInsertValue_XenonEffectDef_Abstract)(eastl::vector<XenonEffectDef, bstl::allocator>* vector, XenonEffectDef* position, XenonEffectDef* value) = (void(__thiscall*)(eastl::vector<XenonEffectDef, bstl::allocator>*, XenonEffectDef*, XenonEffectDef*)) & eastl_vector_DoInsertValue_XenonEffectDef;
-void(__thiscall* eastl_vector_reserve_XenonEffectDef_Abstract)(void* vector, uint32_t n) = (void(__thiscall*)(void*, uint32_t))&eastl_vector_reserve_XenonEffectDef;
-void(__thiscall* eastl_vector_erase_XenonEffectDef_Abstract)(void* vector, void* first, void* last) = (void(__thiscall*)(void*, void*, void*))&eastl_vector_erase_XenonEffectDef;
-
-void __stdcall XenonEffectList_Initialize()
-{
-    eastl_vector_reserve_XenonEffectDef_Abstract(&gNGEffectList, NGEffectListSize);
-    //eastl_vector_erase_XenonEffectDef_Abstract(&gNGEffectList, gNGEffectList, (void*)((uint32_t)(gNGEffectList + 4)));
-}
-
-// EASTL List stuff End
-
 // note: unk_9D7880 == unk_8A3028
 
 void __cdecl AddXenonEffect(
-    void* piggyback_fx,
+    struct EmitterGroup* piggyback_fx,
     Attrib::Collection* spec,
     UMath::Matrix4* mat,
     UMath::Vector4* vel)
 {
     XenonEffectDef newEffect;
-    XenonEffectDef* listPosition = gNGEffectList.mpEnd;
 
-    if (((uint32_t)gNGEffectList.mpEnd - (uint32_t)gNGEffectList.mpBegin) / sizeof(XenonEffectDef) < NGEffectListSize)
+    if (gNGEffectList.size() < gNGEffectList.capacity())
     {
-        memcpy(&newEffect.mat, (const void*)0x8A3028, sizeof(newEffect.mat));
-        newEffect.mat.v3.x = mat->v3.x;
-        newEffect.mat.v3.y = mat->v3.y;
-        newEffect.mat.v3.z = mat->v3.z;
-        newEffect.mat.v3.w = mat->v3.w;
+        newEffect.mat = *(UMath::Matrix4*)0x8A3028;
+        newEffect.mat.v3 = mat->v3;
         newEffect.spec = spec;
-        newEffect.vel.x = vel->x;
-        newEffect.vel.y = vel->y;
-        newEffect.vel.z = vel->z;
-        newEffect.vel.w = vel->w;
+        newEffect.vel = *vel;
         newEffect.piggyback_effect = piggyback_fx;
-        if ((uint32_t)gNGEffectList.mpEnd >= (uint32_t)gNGEffectList.mpCapacity)
-        {
-            eastl_vector_DoInsertValue_XenonEffectDef_Abstract(&gNGEffectList, gNGEffectList.mpEnd, &newEffect);
-        }
-        else
-        {
-            ++gNGEffectList.mpEnd;
-            if (listPosition)
-                memcpy(listPosition, &newEffect, sizeof(XenonEffectDef));
-        }
+        gNGEffectList.push_back(newEffect);
     }
 }
 
@@ -1621,7 +1229,7 @@ bool InitXenonEffects()
 {
     LoadResourceFile(TPKfilename, 0, 0, NULL, 0, 0, 0);
     ServiceResourceLoading();
-    XenonEffectList_Initialize();
+    gNGEffectList.reserve(NGEffectListSize);
     return false;
 }
 
@@ -1632,7 +1240,7 @@ uint32_t sub_6DFAF0_hook()
 }
 
 uint32_t SparkFC = 0;
-void AddXenonEffect_Spark_Hook(void* piggyback_fx, Attrib::Collection* spec, UMath::Matrix4* mat, UMath::Vector4* vel, float intensity)
+void AddXenonEffect_Spark_Hook(struct EmitterGroup* piggyback_fx, Attrib::Collection* spec, UMath::Matrix4* mat, UMath::Vector4* vel, float intensity)
 {
     if (!bLimitSparkRate)
         return AddXenonEffect(piggyback_fx, spec, mat, vel);
@@ -1648,7 +1256,7 @@ void AddXenonEffect_Spark_Hook(void* piggyback_fx, Attrib::Collection* spec, UMa
 }
 
 uint32_t ContrailFC = 0;
-void AddXenonEffect_Contrail_Hook(void* piggyback_fx, Attrib::Collection* spec, UMath::Matrix4* mat, UMath::Vector4* vel, float intensity)
+void AddXenonEffect_Contrail_Hook(struct EmitterGroup* piggyback_fx, Attrib::Collection* spec, UMath::Matrix4* mat, UMath::Vector4* vel, float intensity)
 {
     (void)intensity; // not using this
 #ifdef CONTRAIL_TEST
@@ -1706,23 +1314,18 @@ void AddXenonEffect_Contrail_Hook(void* piggyback_fx, Attrib::Collection* spec, 
 
 void UpdateXenonEmitters(float dt)
 {
-    XenonEffectDef* mpBegin; // ebx
-    XenonEffectDef* i; // edx
-    //NGEffect effect; // [esp-4h] [ebp-84h]
-    XenonEffectDef effectDef; // [esp+20h] [ebp-60h] BYREF
-
     gParticleList.AgeParticles(dt);
-    mpBegin = gNGEffectList.mpBegin;
-    for (i = gNGEffectList.mpEnd; mpBegin != i; ++mpBegin)
+
+    for (int i = 0; i < gNGEffectList.size(); i++)
     {
-        memcpy(&effectDef, mpBegin, sizeof(effectDef));
+        XenonEffectDef &effectDef = gNGEffectList[i];
         if (!effectDef.piggyback_effect || (*((uint32_t*)effectDef.piggyback_effect + 6) & 0x10) != 0)
         {
             NGEffect effect{ &effectDef, dt };
-            i = gNGEffectList.mpEnd;
         }
     }
-    eastl_vector_erase_XenonEffectDef_Abstract(&gNGEffectList, gNGEffectList.mpBegin, gNGEffectList.mpEnd);
+
+    gNGEffectList.clear();
 
     //if (dt > 0.0f)
     gParticleList.GeneratePolys();
