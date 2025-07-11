@@ -685,6 +685,9 @@ void __declspec(naked) sub_736EA0()
 
 // note: unk_9D7880 == unk_8A3028
 
+float elapsedSparkTime = 0;
+float elapsedContrailTime = 0;
+
 void __cdecl AddXenonEffect(
     struct EmitterGroup* piggyback_fx,
     Attrib::Collection* spec,
@@ -692,6 +695,17 @@ void __cdecl AddXenonEffect(
     UMath::Vector4* vel)
 {
     XenonEffectDef newEffect;
+
+    if (bLimitSparkRate && piggyback_fx)
+    {
+        if (elapsedSparkTime < 1000.0f / SparkTargetFPS)
+            return;
+    }
+    else if (bLimitContrailRate && !piggyback_fx)
+    {
+        if (elapsedContrailTime < 1000.0f / ContrailTargetFPS)
+            return;
+    }
 
     if (gNGEffectList.size() < gNGEffectList.capacity())
     {
@@ -1161,7 +1175,6 @@ void ParticleList::GeneratePolys()
 
 void XSpriteManager::Init()
 {
-    //g_D3DDevice = *(LPDIRECT3DDEVICE9*)0x982BDC;
     sparkList.Init(MaxParticles);
     NGSpriteManager.sparkList.mTexture = GetTextureInfo(bStringHash(TextureName), 0, 0);
 }
@@ -1241,81 +1254,8 @@ bool InitXenonEffects()
 
 uint32_t sub_6DFAF0_hook()
 {
-    NGSpriteManager.Init();//InitializeRenderObj();
+    NGSpriteManager.Init();
     return sub_6DFAF0();
-}
-
-uint32_t SparkFC = 0;
-void AddXenonEffect_Spark_Hook(struct EmitterGroup* piggyback_fx, Attrib::Collection* spec, UMath::Matrix4* mat, UMath::Vector4* vel, float intensity)
-{
-    if (!bLimitSparkRate)
-        return AddXenonEffect(piggyback_fx, spec, mat, vel);
-
-    if ((SparkFC + SparkFrameDelay) <= eFrameCounter)
-    {
-        if (SparkFC != eFrameCounter)
-        {
-            SparkFC = eFrameCounter;
-            AddXenonEffect(piggyback_fx, spec, mat, vel);
-        }
-    }
-}
-
-uint32_t ContrailFC = 0;
-void AddXenonEffect_Contrail_Hook(struct EmitterGroup* piggyback_fx, Attrib::Collection* spec, UMath::Matrix4* mat, UMath::Vector4* vel, float intensity)
-{
-    (void)intensity; // not using this
-#ifdef CONTRAIL_TEST
-    // TEST CODE
-    UMath::Vector4 newvel = { -40.6f, 29.3f, -2.3f, 0.0f };
-    UMath::Matrix4 newmat;
-
-    newmat.v0.x = 0.60f;
-    newmat.v0.y = 0.80f;
-    newmat.v0.z = -0.03f;
-    newmat.v0.w = 0.00f;
-
-    newmat.v1.x = -0.80f;
-    newmat.v1.y = 0.60f;
-    newmat.v1.z = 0.01f;
-    newmat.v1.w = 0.00f;
-
-    newmat.v2.x = 0.03f;
-    newmat.v2.y = 0.02f;
-    newmat.v2.z = 1.00f;
-    newmat.v2.w = 0.00f;
-
-    newmat.v3.x = 981.90f;
-    newmat.v3.y = 2148.45f;
-    newmat.v3.z = 153.05f;
-    newmat.v3.w = 1.00f;
-
-    if (!bLimitContrailRate)
-        AddXenonEffect(piggyback_fx, spec, &newmat, &newvel, 1.0f);
-
-    if ((ContrailFC + ContrailFrameDelay) <= eFrameCounter)
-    {
-        if (ContrailFC != eFrameCounter)
-        {
-            ContrailFC = eFrameCounter;
-            AddXenonEffect(piggyback_fx, spec, &newmat, &newvel, 1.0f);
-        }
-    }
-    // TEST CODE
-#else
-
-    if (!bLimitContrailRate)
-        return AddXenonEffect(piggyback_fx, spec, mat, vel);
-
-    if ((ContrailFC + ContrailFrameDelay) <= eFrameCounter)
-    {
-        if (ContrailFC != eFrameCounter)
-        {
-            ContrailFC = eFrameCounter;
-            AddXenonEffect(piggyback_fx, spec, mat, vel);
-        }
-    }
-#endif
 }
 
 struct EmitterGroup : bTNode<EmitterGroup>
@@ -1342,7 +1282,7 @@ void UpdateXenonEmitters(float dt)
     gParticleList.AgeParticles(dt);
 
     // spawn emitters from all emitterdefs
-    for (int i = 0; i < gNGEffectList.size(); i++)
+    for (size_t i = 0; i < gNGEffectList.size(); i++)
     {
         XenonEffectDef &effectDef = gNGEffectList[i];
         if (!effectDef.piggyback_effect || (effectDef.piggyback_effect->mFlags & 0x10) != 0)
@@ -1399,7 +1339,7 @@ void __declspec(naked) Emitter_SpawnParticles_Cave()
         test    eax, eax
         jz      loc_D9D6F
 
-        push    3F800000h
+        
         lea     ecx, [edi+60h]
         push    ecx
         lea     edx, [edi+20h]
@@ -1407,8 +1347,8 @@ void __declspec(naked) Emitter_SpawnParticles_Cave()
         push    eax
         mov     eax, [edi+8Ch]
         push    eax
-        call    AddXenonEffect_Spark_Hook
-        add     esp, 14h
+        call    AddXenonEffect
+        add     esp, 10h
 
     loc_D9D6F:
         //mov     eax, ebx
@@ -1464,7 +1404,7 @@ loc_7E1346:                             ; CODE XREF: sub_7E1160+169↑j
                 push    6F5943F1h
                 call    Attrib_FindCollection ; Attrib::FindCollection((ulong,ulong))
                 add     esp, 8
-                push    3F400000h       ; float
+
                 mov     esi, eax
                 mov     eax, [edi+38h]
                 mov     ecx, [edi+34h]
@@ -1474,9 +1414,9 @@ loc_7E1346:                             ; CODE XREF: sub_7E1160+169↑j
 //loc_7E1397:                             ; CODE XREF: sub_7E1160+1DD↑j
                 push    esi
                 push    0
-                call    AddXenonEffect_Contrail_Hook ; AddXenonEffect(AcidEffect *,Attrib::Collection const *,UMath::Matrix4 const *,UMath::Vector4 const *,float)
+                call    AddXenonEffect; AddXenonEffect(AcidEffect *,Attrib::Collection const *,UMath::Matrix4 const *,UMath::Vector4 const *,float)
                 mov     esi, [ebp+8]
-                add     esp, 14h
+                add     esp, 10h
 
 loc_7E13A5:
                 cmp dword ptr [esi+4], 3
@@ -1686,6 +1626,16 @@ void EarlyRenderHook()
 {
     sub_6CFCE0_2();
     NGSpriteManager.Flip();
+    float dT = ((float(__cdecl*)(unsigned int, unsigned int))0x45CE70)(*(unsigned int*)0x925830, *(unsigned int*)0x925834);
+    
+    if (elapsedSparkTime >= 1000.0f / SparkTargetFPS)
+        elapsedSparkTime = 0.0f;
+
+    if (elapsedContrailTime >= 1000.0f / ContrailTargetFPS)
+        elapsedContrailTime = 0.0f;
+
+    elapsedSparkTime += dT;
+    elapsedContrailTime += dT;
 }
 
 int Init()
