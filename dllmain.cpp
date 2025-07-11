@@ -87,12 +87,19 @@ public:
 #define FRAMECOUNTER_ADDR 0x00982B78
 #define eFrameCounter *(uint32_t*)FRAMECOUNTER_ADDR
 
+
 class bNode {
     void* Prev;
     void* Next;
 };
 
 template <class T> class bTNode : bNode {};
+
+class bList {
+    bNode Head;
+};
+
+template <class T> class bTList : bList {};
 
 struct RenderState {
     uint32_t _bf_0;
@@ -1312,6 +1319,26 @@ void AddXenonEffect_Contrail_Hook(struct EmitterGroup* piggyback_fx, Attrib::Col
 #endif
 }
 
+struct EmitterGroup : bTNode<EmitterGroup>
+{
+    struct bList mEmitters;
+    unsigned int mGroupKey;
+    unsigned int Padding;
+    unsigned int mFlags;
+    unsigned __int16 mNumEmitters;
+    unsigned __int16 mSectionNumber;
+    struct UMath::Matrix4 mLocalWorld;
+    void* mSubscriber;
+    float mFarClip;
+    float mIntensity;
+    void(__cdecl* mDeleteCallback)(void*, struct EmitterGroup*);
+    void* mDynamicData;
+    unsigned int mNumZeroParticleFrames;
+    unsigned int mCreationTimeStamp;
+    unsigned int pad;
+};
+
+
 void UpdateXenonEmitters(float dt)
 {
     gParticleList.AgeParticles(dt);
@@ -1319,7 +1346,7 @@ void UpdateXenonEmitters(float dt)
     for (int i = 0; i < gNGEffectList.size(); i++)
     {
         XenonEffectDef &effectDef = gNGEffectList[i];
-        if (!effectDef.piggyback_effect || (*((uint32_t*)effectDef.piggyback_effect + 6) & 0x10) != 0)
+        if (!effectDef.piggyback_effect || (effectDef.piggyback_effect->mFlags & 0x10) != 0)
         {
             NGEffect effect{ &effectDef, dt };
         }
