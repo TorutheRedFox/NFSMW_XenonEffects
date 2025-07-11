@@ -1733,7 +1733,8 @@ void __stdcall EmitterSystem_Update_Hook(float dt)
     uint32_t that;
     _asm mov that, ecx
     EmitterSystem_UpdateParticles((void*)that, dt);
-    UpdateXenonEmitters(dt);
+    if (*(uint32_t*)GAMEFLOWSTATUS_ADDR == 6)
+        UpdateXenonEmitters(dt);
 }
 
 uint32_t RescueESI = 0;
