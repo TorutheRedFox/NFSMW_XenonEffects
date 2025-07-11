@@ -195,6 +195,7 @@ void* (__cdecl* FastMem_CoreAlloc)(uint32_t size, char* debug_line) = (void* (__
 void(__stdcall* sub_739600)() = (void(__stdcall*)())0x739600;
 void(__thiscall* CarRenderConn_UpdateEngineAnimation)(void* CarRenderConn, float param1, void* PktCarService) = (void(__thiscall*)(void*, float, void*))0x00745F20;
 void(__stdcall* sub_6CFCE0)() = (void(__stdcall*)())0x6CFCE0;
+void(__stdcall* sub_6CFCE0_2)() = (void(__stdcall*)())0x6CFCE0;
 void(__cdecl* ParticleSetTransform)(D3DXMATRIX* worldmatrix, uint32_t EVIEW_ID) = (void(__cdecl*)(D3DXMATRIX*, uint32_t))0x6C8000;
 bool(__thiscall* WCollisionMgr_CheckHitWorld)(void* WCollisionMgr, UMath::Vector4* inputSeg, void* cInfo, uint32_t primMask) = (bool(__thiscall*)(void*, UMath::Vector4*, void*, uint32_t))0x007854B0;
 void(__cdecl* GameSetTexture)(void* TextureInfo, uint32_t unk) = (void(__cdecl*)(void*, uint32_t))0x006C68B0;
@@ -428,21 +429,20 @@ LPDIRECT3DDEVICE9 &g_D3DDevice = *(LPDIRECT3DDEVICE9*)0x982BDC;
 template <typename T, typename U>
 struct SpriteBuffer
 {
-    unsigned short mCurrentBuffer = 0;
 
     unsigned int mVertexCount = 0;
     unsigned int mMaxSprites = 0;
-    unsigned int mNumPolys[3] = { 0, 0, 0 };
+    unsigned int mNumPolys = 0;
 
     bool mbLocked = false;
     T* mLockedVB = NULL;
-    LPDIRECT3DVERTEXBUFFER9 mpVB[3] = { NULL, NULL, NULL };
-    LPDIRECT3DINDEXBUFFER9 mpIB[3] = { NULL, NULL, NULL };
+    LPDIRECT3DVERTEXBUFFER9 mpVB = NULL;
+    LPDIRECT3DINDEXBUFFER9 mpIB = NULL;
 
     void Draw(eEffect &effect, TextureInfo* pTexture)
     {
-        g_D3DDevice->SetStreamSource(0, mpVB[mCurrentBuffer], 0, sizeof(U));
-        g_D3DDevice->SetIndices(mpIB[mCurrentBuffer]);
+        g_D3DDevice->SetStreamSource(0, mpVB, 0, sizeof(U));
+        g_D3DDevice->SetIndices(mpIB);
 
         if (pTexture)
         {
@@ -471,7 +471,7 @@ struct SpriteBuffer
         g_D3DDevice->SetSamplerState(2, D3DSAMP_MIPFILTER, D3DTEXF_NONE);
         g_D3DDevice->SetSamplerState(3, D3DSAMP_MIPFILTER, D3DTEXF_NONE);
 
-        g_D3DDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, 4 * mNumPolys[mCurrentBuffer], 0, 2 * mNumPolys[mCurrentBuffer]);
+        g_D3DDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, 4 * mNumPolys, 0, 2 * mNumPolys);
     }
 
     void Init(uint32_t spriteCount)
@@ -482,77 +482,75 @@ struct SpriteBuffer
 
         uint16_t* idxBuf;
 
-        for (int i = 0; i < 3; i++)
+        mpVB = NULL;
+        mNumPolys = 0;
+        mVertexCount = 4 * spriteCount;
+        mMaxSprites = spriteCount;
+        g_D3DDevice->CreateVertexBuffer(sizeof(T) * (spriteCount + 3), D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY, 0, D3DPOOL_DEFAULT, &mpVB, 0);
+        g_D3DDevice->CreateIndexBuffer(
+            12 * spriteCount,
+            D3DUSAGE_WRITEONLY,
+            D3DFMT_INDEX16,
+            D3DPOOL_MANAGED,
+            &mpIB,
+            0);
+        v5 = 0;
+        if (mpIB->Lock(NULL, NULL, (void**)&idxBuf, NULL) != S_OK)
         {
-            mpVB[i] = NULL;
-            mNumPolys[i] = 0;
-            mVertexCount = 4 * spriteCount;
-            mMaxSprites = spriteCount;
-            g_D3DDevice->CreateVertexBuffer(sizeof(T) * (spriteCount + 3), D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY, 0, D3DPOOL_DEFAULT, &mpVB[i], 0);
-            g_D3DDevice->CreateIndexBuffer(
-                12 * spriteCount,
-                D3DUSAGE_WRITEONLY,
-                D3DFMT_INDEX16,
-                D3DPOOL_MANAGED,
-                &mpIB[i],
-                0);
-            v5 = 0;
-            if (mpIB[i]->Lock(NULL, NULL, (void**)&idxBuf, NULL) != S_OK)
-            {
-                mpIB[i] = NULL;
-            }
-            else
-            {
-                if (spriteCount)
-                {
-                    v6 = 0;
-                    v7 = 3;
-                    do
-                    {
-                        idxBuf[v7 - 3] = v6;
-                        idxBuf[v7 - 2] = v6 + 1;
-                        idxBuf[v7 - 1] = v6 + 2;
-                        idxBuf[v7] = v6;
-                        idxBuf[v7 + 1] = v6 + 2;
-                        idxBuf[v7 + 2] = v6 + 3;
-                        ++v5;
-                        v7 += 6;
-                        v6 += 4;
-                    } while (v5 < spriteCount);
-                }
-                mpIB[i]->Unlock();
-            }
+            mpIB = NULL;
         }
+        else
+        {
+            if (spriteCount)
+            {
+                v6 = 0;
+                v7 = 3;
+                do
+                {
+                    idxBuf[v7 - 3] = v6;
+                    idxBuf[v7 - 2] = v6 + 1;
+                    idxBuf[v7 - 1] = v6 + 2;
+                    idxBuf[v7] = v6;
+                    idxBuf[v7 + 1] = v6 + 2;
+                    idxBuf[v7 + 2] = v6 + 3;
+                    ++v5;
+                    v7 += 6;
+                    v6 += 4;
+                } while (v5 < spriteCount);
+            }
+            mpIB->Unlock();
+        }
+        
     }
 
     void Reset()
     {
-         if (mpVB[mCurrentBuffer])
-             mpVB[mCurrentBuffer]->Release();
-         if (mpIB[mCurrentBuffer])
-             mpIB[mCurrentBuffer]->Release();
+         if (mpVB)
+             mpVB->Release();
+         if (mpIB)
+             mpIB->Release();
     }
 
     void Lock()
     {
-        if (mpVB[mCurrentBuffer])
+        if (mpVB)
         {
-            mpVB[mCurrentBuffer]->Lock(
+            mpVB->Lock(
                 0,
                 sizeof(T) * mMaxSprites,
                 (void**)&mLockedVB,
                 D3DLOCK_DISCARD);
 
-            mNumPolys[mCurrentBuffer] = 0;
+            mNumPolys = 0;
             mbLocked = true;
         }
     }
 
     void Unlock()
     {
-        if (mbLocked && mpVB[mCurrentBuffer])
+        if (mbLocked && mpVB)
         {
-            mpVB[mCurrentBuffer]->Unlock();
+            mpVB->Unlock();
             mLockedVB = NULL;
             mbLocked = false;
         }
@@ -631,6 +629,7 @@ public:
     void AddSpark(NGParticle* particleList, unsigned int numParticles);
     void Init();
     void Reset();
+    void Flip();
 };
 
 float flt_9C92F0 = 255.0f;
@@ -1488,7 +1487,7 @@ void XSpriteManager::AddSpark(NGParticle* particleList, unsigned int numParticle
         {
             XSpark *spark = &sparkList.mSprintListView[sparkList.mCurrViewBuffer].mLockedVB[i];
 
-            sparkList.mSprintListView[sparkList.mCurrViewBuffer].mNumPolys[sparkList.mSprintListView[sparkList.mCurrViewBuffer].mCurrentBuffer] = i;
+            sparkList.mSprintListView[sparkList.mCurrViewBuffer].mNumPolys = i;
 
             if (spark)
             {
@@ -1534,7 +1533,7 @@ void XSpriteManager::AddSpark(NGParticle* particleList, unsigned int numParticle
         }
     }
     
-    if (bBatching && sparkList.mSprintListView[sparkList.mCurrViewBuffer].mpVB[sparkList.mSprintListView[sparkList.mCurrViewBuffer].mCurrentBuffer])
+    if (bBatching && sparkList.mSprintListView[sparkList.mCurrViewBuffer].mpVB)
         bBatching = false;
 
     sparkList.Unlock();
@@ -1561,6 +1560,13 @@ void XSpriteManager::Reset()
 void ReleaseRenderObj()
 {
     NGSpriteManager.Reset();
+}
+
+void XSpriteManager::Flip()
+{
+    sparkList.mNumViews = 0;
+    //sparkList.mSprintListView[0].mCurrentBuffer = (sparkList.mSprintListView[0].mCurrentBuffer + 1) % 3;
+    //sparkList.mSprintListView[1].mCurrentBuffer = (sparkList.mSprintListView[1].mCurrentBuffer + 1) % 3;
 }
 
 void XSpriteManager::DrawBatch(eView* view)
@@ -2045,6 +2051,12 @@ void InitConfig()
     //}
 }
 
+void EarlyRenderHook()
+{
+    sub_6CFCE0_2();
+    NGSpriteManager.Flip();
+}
+
 int Init()
 {
     // allocate for effect list
@@ -2068,6 +2080,9 @@ int Init()
 
     // xenon effect inject at loc_50A5D7 for Emitter::SpawnParticles
     injector::MakeJMP(0x50A5D7, Emitter_SpawnParticles_Cave, true);
+
+    // do some per-frame early initialization
+    sub_6CFCE0_2 = injector::MakeCALL(0x6E73C3, EarlyRenderHook).get();
 
     // xenon effect inject at CarRenderConn::OnRender for contrails
     if (bContrails)
