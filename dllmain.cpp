@@ -237,10 +237,10 @@ unsigned int sub_6012B0 = 0x4FA510;
 
 struct XenonEffectDef
 {
-    UMath::Vector4  vel;
-    UMath::Matrix4  mat;
-    Attrib::Collection* spec;
-    struct EmitterGroup* piggyback_effect;
+    UMath::Vector4 vel = { 0, 0, 0, 0 };
+    UMath::Matrix4 mat = *(UMath::Matrix4*)0x8A3028;
+    Attrib::Collection* spec = NULL;
+    struct EmitterGroup* piggyback_effect = NULL;
 };
 
 namespace bstl
@@ -695,7 +695,6 @@ void __cdecl AddXenonEffect(
 
     if (gNGEffectList.size() < gNGEffectList.capacity())
     {
-        newEffect.mat = *(UMath::Matrix4*)0x8A3028;
         newEffect.mat.v3 = mat->v3;
         newEffect.spec = spec;
         newEffect.vel = *vel;
@@ -1338,23 +1337,24 @@ struct EmitterGroup : bTNode<EmitterGroup>
     unsigned int pad;
 };
 
-
 void UpdateXenonEmitters(float dt)
 {
     gParticleList.AgeParticles(dt);
 
+    // spawn emitters from all emitterdefs
     for (int i = 0; i < gNGEffectList.size(); i++)
     {
         XenonEffectDef &effectDef = gNGEffectList[i];
         if (!effectDef.piggyback_effect || (effectDef.piggyback_effect->mFlags & 0x10) != 0)
         {
-            NGEffect effect{ &effectDef, dt };
+            NGEffect effect{ &effectDef, dt }; // create NGEffect from effect def
         }
     }
 
+    // clear list of emitterdefs
     gNGEffectList.clear();
 
-    //if (dt > 0.0f)
+    // generate mesh for rendering
     gParticleList.GeneratePolys();
 }
 
