@@ -229,7 +229,6 @@ unsigned int sub_6012B0 = 0x4FA510;
 
 struct XenonEffectDef
 {
-    float           intensity;
     UMath::Vector4  vel;
     UMath::Matrix4  mat;
     Attrib::Collection* spec;
@@ -328,7 +327,7 @@ public:
     NGParticle* mParticles;// [1000] ;
     unsigned int mNumParticles;
     void AgeParticles(float dt);
-    void GeneratePolys(eView* view);
+    void GeneratePolys();
     NGParticle* GetNextParticle();
 };
 
@@ -429,18 +428,21 @@ LPDIRECT3DDEVICE9 &g_D3DDevice = *(LPDIRECT3DDEVICE9*)0x982BDC;
 template <typename T, typename U>
 struct SpriteBuffer
 {
-    LPDIRECT3DVERTEXBUFFER9 mpVB = NULL;
-    LPDIRECT3DINDEXBUFFER9 mpIB = NULL;
+    unsigned short mCurrentBuffer = 0;
+
     unsigned int mVertexCount = 0;
     unsigned int mMaxSprites = 0;
-    unsigned int mNumPolys = 0;
+    unsigned int mNumPolys[3] = { 0, 0, 0 };
 
-    T* mLockedVB;
+    bool mbLocked = false;
+    T* mLockedVB = NULL;
+    LPDIRECT3DVERTEXBUFFER9 mpVB[3] = { NULL, NULL, NULL };
+    LPDIRECT3DINDEXBUFFER9 mpIB[3] = { NULL, NULL, NULL };
 
     void Draw(eEffect &effect, TextureInfo* pTexture)
     {
-        g_D3DDevice->SetStreamSource(0, mpVB, 0, sizeof(U));
-        g_D3DDevice->SetIndices(mpIB);
+        g_D3DDevice->SetStreamSource(0, mpVB[mCurrentBuffer], 0, sizeof(U));
+        g_D3DDevice->SetIndices(mpIB[mCurrentBuffer]);
 
         if (pTexture)
         {
@@ -469,7 +471,7 @@ struct SpriteBuffer
         g_D3DDevice->SetSamplerState(2, D3DSAMP_MIPFILTER, D3DTEXF_NONE);
         g_D3DDevice->SetSamplerState(3, D3DSAMP_MIPFILTER, D3DTEXF_NONE);
 
-        g_D3DDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, 4 * mNumPolys, 0, 2 * mNumPolys);
+        g_D3DDevice->DrawIndexedPrimitive(D3DPT_TRIANGLELIST, 0, 0, 4 * mNumPolys[mCurrentBuffer], 0, 2 * mNumPolys[mCurrentBuffer]);
     }
 
     void Init(uint32_t spriteCount)
@@ -480,73 +482,80 @@ struct SpriteBuffer
 
         uint16_t* idxBuf;
 
-        mpVB = NULL;
-        mNumPolys = 0;
-        mVertexCount = 4 * spriteCount;
-        mMaxSprites = spriteCount;
-        g_D3DDevice->CreateVertexBuffer(sizeof(T) * (spriteCount + 3), D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY, 0, D3DPOOL_DEFAULT, &mpVB, 0);
-        g_D3DDevice->CreateIndexBuffer(
-            12 * spriteCount,
-            D3DUSAGE_WRITEONLY,
-            D3DFMT_INDEX16,
-            D3DPOOL_MANAGED,
-            &mpIB,
-            0);
-        v5 = 0;
-        if (mpIB->Lock(NULL, NULL, (void**)&idxBuf, NULL) != S_OK)
+        for (int i = 0; i < 3; i++)
         {
-            mpIB = NULL;
-        }
-        else
-        {
-            if (spriteCount)
+            mpVB[i] = NULL;
+            mNumPolys[i] = 0;
+            mVertexCount = 4 * spriteCount;
+            mMaxSprites = spriteCount;
+            g_D3DDevice->CreateVertexBuffer(sizeof(T) * (spriteCount + 3), D3DUSAGE_DYNAMIC | D3DUSAGE_WRITEONLY, 0, D3DPOOL_DEFAULT, &mpVB[i], 0);
+            g_D3DDevice->CreateIndexBuffer(
+                12 * spriteCount,
+                D3DUSAGE_WRITEONLY,
+                D3DFMT_INDEX16,
+                D3DPOOL_MANAGED,
+                &mpIB[i],
+                0);
+            v5 = 0;
+            if (mpIB[i]->Lock(NULL, NULL, (void**)&idxBuf, NULL) != S_OK)
             {
-                v6 = 0;
-                v7 = 3;
-                do
-                {
-                    idxBuf[v7 - 3] = v6;
-                    idxBuf[v7 - 2] = v6 + 1;
-                    idxBuf[v7 - 1] = v6 + 2;
-                    idxBuf[v7] = v6;
-                    idxBuf[v7 + 1] = v6 + 2;
-                    idxBuf[v7 + 2] = v6 + 3;
-                    ++v5;
-                    v7 += 6;
-                    v6 += 4;
-                } while (v5 < spriteCount);
+                mpIB[i] = NULL;
             }
-            mpIB->Unlock();
+            else
+            {
+                if (spriteCount)
+                {
+                    v6 = 0;
+                    v7 = 3;
+                    do
+                    {
+                        idxBuf[v7 - 3] = v6;
+                        idxBuf[v7 - 2] = v6 + 1;
+                        idxBuf[v7 - 1] = v6 + 2;
+                        idxBuf[v7] = v6;
+                        idxBuf[v7 + 1] = v6 + 2;
+                        idxBuf[v7 + 2] = v6 + 3;
+                        ++v5;
+                        v7 += 6;
+                        v6 += 4;
+                    } while (v5 < spriteCount);
+                }
+                mpIB[i]->Unlock();
+            }
         }
     }
 
     void Reset()
     {
-         if (mpVB)
-             mpVB->Release();
-         if (mpIB)
-             mpIB->Release();
+         if (mpVB[mCurrentBuffer])
+             mpVB[mCurrentBuffer]->Release();
+         if (mpIB[mCurrentBuffer])
+             mpIB[mCurrentBuffer]->Release();
     }
 
-    void Lock(size_t viewId)
+    void Lock()
     {
-        (void)viewId;
+        if (mpVB[mCurrentBuffer])
+        {
+            mpVB[mCurrentBuffer]->Lock(
+                0,
+                sizeof(T) * mMaxSprites,
+                (void**)&mLockedVB,
+                D3DLOCK_DISCARD);
 
-        mpVB->Lock(
-            0,
-            sizeof(T) * mMaxSprites,
-            (void**)&mLockedVB,
-            D3DLOCK_DISCARD);
-
-        mNumPolys = 0;
+            mNumPolys[mCurrentBuffer] = 0;
+            mbLocked = true;
+        }
     }
 
-    void Unlock(size_t viewId)
+    void Unlock()
     {
-        (void)viewId;
-
-        mpVB->Unlock();
-        mLockedVB = NULL;
+        if (mbLocked && mpVB[mCurrentBuffer])
+        {
+            mpVB[mCurrentBuffer]->Unlock();
+            mLockedVB = NULL;
+            mbLocked = false;
+        }
     }
 };
 
@@ -585,7 +594,7 @@ public:
     {
         this->mTexture = NULL;
 
-        for (size_t i = 0; i < mNumViews; i++)
+        for (size_t i = 0; i < NumViews; i++)
         {
             mSprintListView[i].Init(spriteCount);
         }
@@ -593,20 +602,22 @@ public:
 
     void Reset()
     {
-        for (size_t i = 0; i < mNumViews; i++)
+        for (size_t i = 0; i < NumViews; i++)
         {
             mSprintListView[i].Reset();
         }
     }
 
-    void Lock(size_t viewId)
+    void Lock()
     {
-        mSprintListView[viewId - 1].Lock(viewId);
+        mCurrViewBuffer = mNumViews;
+        mNumViews = (mNumViews + 1) % NumViews;
+        mSprintListView[mCurrViewBuffer].Lock();
     }
 
-    void Unlock(size_t viewId)
+    void Unlock()
     {
-        mSprintListView[viewId - 1].Unlock(viewId);
+        mSprintListView[mCurrViewBuffer].Unlock();
     }
 };
 
@@ -617,19 +628,9 @@ public:
     bool bBatching = false;
 
     void DrawBatch(eView* view);
-    void AddParticle(eView* view, NGParticle* particleList, unsigned int numParticles);
+    void AddSpark(NGParticle* particleList, unsigned int numParticles);
     void Init();
     void Reset();
-
-    void Lock(size_t viewId)
-    {
-        sparkList.Lock(viewId);
-    }
-
-    void Unlock(size_t viewId)
-    {
-        sparkList.Unlock(viewId);
-    }
 };
 
 float flt_9C92F0 = 255.0f;
@@ -646,116 +647,11 @@ unsigned int randomSeed = 0xDEADBEEF;
 const char* TextureName = "MAIN";
 float gFrameDT = 0.0f;
 
-struct fuelcell_emitter_mw
-{
-    UMath::Vector4 VolumeCenter;
-    UMath::Vector4 VelocityDelta;
-    UMath::Vector4 VolumeExtent;
-    UMath::Vector4 VelocityInherit;
-    UMath::Vector4 VelocityStart;
-    UMath::Vector4 Colour1;
-    uint32_t emitteruv_classKey;
-    uint32_t emitteruv_collectionKey;
-    void* emitteruv_collection;
-    float Life;
-    float NumParticlesVariance;
-    float GravityStart;
-    float HeightStart;
-    float GravityDelta;
-    float LengthStart;
-    float LengthDelta;
-    float LifeVariance;
-    float NumParticles;
-    uint16_t Spin;
-    uint8_t zSprite;
-    uint8_t zContrail;
-};
-
-struct fuelcell_emitter_carbon
-{
-    UMath::Vector4 VolumeCenter;
-    UMath::Vector4 VelocityDelta;
-    UMath::Vector4 VolumeExtent;
-    UMath::Vector4 VelocityInherit;
-    UMath::Vector4 VelocityStart;
-    UMath::Vector4 Colour1;
-    uint32_t emitteruv_classKey;
-    uint32_t emitteruv_collectionKey;
-    void* emitteruv_collection;
-    float Life;
-    float NumParticlesVariance;
-    float GravityStart;
-    float HeightStart;
-    float GravityDelta;
-    float Elasticity;
-    float LengthStart;
-    float LengthDelta;
-    float LifeVariance;
-    float NumParticles;
-    uint8_t zDebrisType;
-    uint8_t zContrail;
-}bridge_instance;
-
-struct ElasticityPair
-{
-    uint32_t emmitter_key;
-    float Elasticity;
-};
-vector<ElasticityPair> elasticityValues;
-
-float GetElasticityValue(uint32_t key)
-{
-    for (size_t i = 0; i < elasticityValues.size(); i++)
-    {
-        if (elasticityValues.at(i).emmitter_key == key)
-            return elasticityValues.at(i).Elasticity;
-    }
-    return 0.0f;
-}
-
 XSpriteManager NGSpriteManager;
 
 float GetTargetFrametime()
 {
     return **(float**)0x6612EC;
-}
-
-uint32_t bridge_oldaddr = 0;
-uint32_t bridge_instance_addr = 0;
-void __stdcall fuelcell_emitter_bridge()
-{
-    uint32_t that;
-    _asm mov that, ecx
-    bridge_instance_addr = that;
-
-    uint32_t instance_pointer = *(uint32_t*)(that + 4);
-    uint32_t key = *(uint32_t*)((*(uint32_t*)(that)) + 0x20);
-
-    fuelcell_emitter_mw* mw_emitter = (fuelcell_emitter_mw*)instance_pointer;
-    memset(&bridge_instance, 0, sizeof(fuelcell_emitter_carbon));
-    // copy the matching data first (first 0x80 bytes)
-    memcpy(&bridge_instance, mw_emitter, 0x80);
-    // adapt
-    bridge_instance.LengthStart = mw_emitter->LengthStart;
-    bridge_instance.LengthDelta = mw_emitter->LengthDelta;
-    bridge_instance.LifeVariance = mw_emitter->LifeVariance;
-    bridge_instance.NumParticles = mw_emitter->NumParticles;
-    bridge_instance.zContrail = mw_emitter->zContrail;
-    bridge_instance.Elasticity = GetElasticityValue(key);
-    
-    //printf("key: 0x%X Elasticity: %.2f\n", key, bridge_instance.Elasticity);
-
-    // no idea if this is right
-    //bridge_instance.zDebrisType = (*mw_emitter).unk_0xD8782949;
-
-    // save & write back the pointer
-    bridge_oldaddr = instance_pointer;
-    *(uint32_t*)(that + 4) = (uint32_t)&bridge_instance;
-}
-
-void __stdcall fuelcell_emitter_bridge_restore()
-{
-    *(uint32_t*)(bridge_instance_addr + 4) = bridge_oldaddr;
 }
 
 void* FastMem_CoreAlloc_Wrapper(uint32_t size)
@@ -804,8 +700,8 @@ loc_74C7F3:                             ; CODE XREF: eastl::uninitialized_copy_i
                 rep movsd
 
 loc_74C802:                             ; CODE XREF: eastl::uninitialized_copy_impl<eastl::generic_iterator<XenonEffectDef *,void>,eastl::generic_iterator<XenonEffectDef *,void>>(eastl::generic_iterator<XenonEffectDef *,void>,eastl::generic_iterator<XenonEffectDef *,void>,eastl::generic_iterator<XenonEffectDef *,void>,eastl::integral_constant<bool,0>)+15↑j
-                add     eax, 5Ch ; '\'
-                add     edx, 5Ch ; '\'
+                add     eax, 58h ; '\'
+                add     edx, 58h ; '\'
                 cmp     eax, ebx
                 jnz     short loc_74C7F3
                 pop     edi
@@ -841,9 +737,9 @@ void __declspec(naked) eastl_vector_erase_XenonEffectDef()
 loc_752BE0:                             ; CODE XREF: eastl::vector<XenonEffectDef,bstl::allocator>::erase(XenonEffectDef *,XenonEffectDef *)+33↓j
                 mov     esi, eax
                 mov     edi, edx
-                add     eax, 5Ch ; '\'
+                add     eax, 58h ; '\'
                 mov     ecx, 17h
-                add     edx, 5Ch ; '\'
+                add     edx, 58h ; '\'
                 cmp     eax, ebx
                 rep movsd
                 jnz     short loc_752BE0
@@ -861,7 +757,7 @@ loc_752BFE:                             ; CODE XREF: eastl::vector<XenonEffectDe
                 shr     eax, 1Fh
                 add     eax, edx
                 mov     edx, [ecx+4]
-                imul    eax, 5Ch ; '\'
+                imul    eax, 58h ; '\'
                 add     edx, eax
                 mov     eax, esi
                 pop     esi
@@ -894,26 +790,26 @@ void __declspec(naked) eastl_vector_DoInsertValue_XenonEffectDef()
                 jb      short loc_752C5E
                 cmp     eax, edi
                 jnb     short loc_752C5E
-                add     eax, 5Ch ; '\'
+                add     eax, 58h ; '\'
                 mov     [esp+20h], eax
 
 loc_752C5E:                             ; CODE XREF: eastl::vector<XenonEffectDef,bstl::allocator>::DoInsertValue(XenonEffectDef *,XenonEffectDef const &)+21↑j
                                         ; eastl::vector<XenonEffectDef,bstl::allocator>::DoInsertValue(XenonEffectDef *,XenonEffectDef const &)+25↑j
                 test    edi, edi
                 jz      short loc_752C6C
-                lea     esi, [edi-5Ch]
+                lea     esi, [edi-58h]
                 mov     ecx, 17h
                 rep movsd
 
 loc_752C6C:                             ; CODE XREF: eastl::vector<XenonEffectDef,bstl::allocator>::DoInsertValue(XenonEffectDef *,XenonEffectDef const &)+30↑j
                 mov     edx, [ebx+4]
-                lea     eax, [edx-5Ch]
+                lea     eax, [edx-58h]
                 cmp     eax, ebp
                 jz      short loc_752C8B
 
 loc_752C76:                             ; CODE XREF: eastl::vector<XenonEffectDef,bstl::allocator>::DoInsertValue(XenonEffectDef *,XenonEffectDef const &)+59↓j
-                sub     eax, 5Ch ; '\'
-                sub     edx, 5Ch ; '\'
+                sub     eax, 58h ; '\'
+                sub     edx, 58h ; '\'
                 cmp     eax, ebp
                 mov     ecx, 17h
                 mov     esi, eax
@@ -929,7 +825,7 @@ loc_752C8B:                             ; CODE XREF: eastl::vector<XenonEffectDe
                 mov     eax, [ebx+4]
                 pop     edi
                 pop     esi
-                add     eax, 5Ch ; '\'
+                add     eax, 58h ; '\'
                 pop     ebp
                 mov     [ebx+4], eax
                 pop     ebx
@@ -954,7 +850,7 @@ loc_752CAB:                             ; CODE XREF: eastl::vector<XenonEffectDe
 
 loc_752CCD:                             ; CODE XREF: eastl::vector<XenonEffectDef,bstl::allocator>::DoInsertValue(XenonEffectDef *,XenonEffectDef const &)+C5↓j
                 mov     eax, edi
-                imul    eax, 5Ch ; '\'
+                imul    eax, 58h ; '\'
                 test    eax, eax
                 jz      short loc_752CF7
                 push    0
@@ -1001,7 +897,7 @@ loc_752D37:                             ; CODE XREF: eastl::vector<XenonEffectDe
                 mov     edx, [esp+1Ch]
                 mov     ecx, [ebx+4]
                 push    edx
-                add     eax, 5Ch ; '\'
+                add     eax, 58h ; '\'
                 push    eax
                 push    ecx
                 lea     eax, [esp+28h]
@@ -1021,7 +917,7 @@ loc_752D37:                             ; CODE XREF: eastl::vector<XenonEffectDe
                 mov     ecx, edx
                 shr     ecx, 1Fh
                 add     ecx, edx
-                imul    ecx, 5Ch ; '\'
+                imul    ecx, 58h ; '\'
                 push    0
                 push    ecx
                 push    esi
@@ -1030,7 +926,7 @@ loc_752D37:                             ; CODE XREF: eastl::vector<XenonEffectDe
 
 loc_752D81:                             ; CODE XREF: eastl::vector<XenonEffectDef,bstl::allocator>::DoInsertValue(XenonEffectDef *,XenonEffectDef const &)+126↑j
                 mov     eax, [esp+10h]
-                imul    edi, 5Ch ; '\'
+                imul    edi, 58h ; '\'
                 mov     edx, [esp+1Ch]
                 add     edi, eax
                 mov     [ebx+8], edi
@@ -1072,7 +968,7 @@ void __declspec(naked) eastl_vector_reserve_XenonEffectDef()
                 mov     [esp+14h], ecx
                 jz      short loc_7527E1
                 mov     eax, ebx
-                imul    eax, 5Ch ; '\'
+                imul    eax, 58h ; '\'
                 test    eax, eax
                 jz      short loc_7527E1
                 push    0
@@ -1110,7 +1006,7 @@ loc_7527E3:                             ; CODE XREF: eastl::vector<XenonEffectDe
                 mov     eax, edx
                 shr     eax, 1Fh
                 add     eax, edx
-                imul    eax, 5Ch ; '\'
+                imul    eax, 58h ; '\'
                 push    0
                 push    eax
                 push    ebp
@@ -1119,7 +1015,7 @@ loc_7527E3:                             ; CODE XREF: eastl::vector<XenonEffectDe
 
 loc_75282B:                             ; CODE XREF: eastl::vector<XenonEffectDef,bstl::allocator>::reserve(uint)+70↑j
                 mov     edx, [esi]
-                imul    ebx, 5Ch ; '\'
+                imul    ebx, 58h ; '\'
                 mov     ecx, [esi+4]
                 sub     ecx, edx
                 mov     eax, 0B21642C9h
@@ -1129,7 +1025,7 @@ loc_75282B:                             ; CODE XREF: eastl::vector<XenonEffectDe
                 mov     eax, edx
                 shr     eax, 1Fh
                 add     eax, edx
-                imul    eax, 5Ch ; '\'
+                imul    eax, 58h ; '\'
                 add     eax, edi
                 add     ebx, edi
                 mov     [esi], edi
@@ -1163,10 +1059,9 @@ void __cdecl AddXenonEffect(
     void* piggyback_fx,
     Attrib::Collection* spec,
     UMath::Matrix4* mat,
-    UMath::Vector4* vel,
-    float intensity)
+    UMath::Vector4* vel)
 {
-    XenonEffectDef newEffect; // [esp+8h] [ebp-5Ch] BYREF
+    XenonEffectDef newEffect;
     XenonEffectDef* listPosition = gNGEffectList.mpEnd;
 
     if (((uint32_t)gNGEffectList.mpEnd - (uint32_t)gNGEffectList.mpBegin) / sizeof(XenonEffectDef) < NGEffectListSize)
@@ -1182,7 +1077,6 @@ void __cdecl AddXenonEffect(
         newEffect.vel.z = vel->z;
         newEffect.vel.w = vel->w;
         newEffect.piggyback_effect = piggyback_fx;
-        newEffect.intensity = intensity;
         if ((uint32_t)gNGEffectList.mpEnd >= (uint32_t)gNGEffectList.mpCapacity)
         {
             eastl_vector_DoInsertValue_XenonEffectDef_Abstract(&gNGEffectList, gNGEffectList.mpEnd, &newEffect);
@@ -1556,16 +1450,28 @@ NGEffect::NGEffect(XenonEffectDef* eDef, float dt) :
         numEmitters = mEffectDef.Num_NGEmitter();
         for (int i = 0; i < numEmitters; i++)
         {
+            float intensity = 1.0f;
+            
+            if (!eDef->piggyback_effect && !bUseCGStyle)
+            {
+                float carspeed = (UMath::Length(*(UMath::Vector3*)&eDef->vel) - ContrailSpeed) / 30.0f;
+                intensity = UMath::Lerp(ContrailMinIntensity, ContrailMaxIntensity, carspeed);
+                if (intensity > ContrailMaxIntensity)
+                    intensity = ContrailMaxIntensity;
+                else if (ContrailMinIntensity > intensity)
+                    intensity = 0.1f;
+            }
+
             Attrib::Collection* emspec = mEffectDef.NGEmitter(i).GetCollection();
             CGEmitter anEmitter{ emspec, eDef };
-            anEmitter.SpawnParticles(dt, eDef->piggyback_effect ? 1.0f : eDef->intensity, false);
+            anEmitter.SpawnParticles(dt, intensity, !eDef->piggyback_effect);
         }
     }
 }
 
-void XSpriteManager::AddParticle(eView* view, NGParticle* particleList, unsigned int numParticles)
+void XSpriteManager::AddSpark(NGParticle* particleList, unsigned int numParticles)
 {
-    Lock(view->EVIEW_ID);
+    sparkList.Lock();
 
     bBatching = true;
 
@@ -1578,11 +1484,11 @@ void XSpriteManager::AddParticle(eView* view, NGParticle* particleList, unsigned
         float endAge;
         float width = particle->width / 2048.0f;
 
-        if (i < sparkList.mSprintListView[view->EVIEW_ID - 1].mMaxSprites)
+        if (i < sparkList.mSprintListView[sparkList.mCurrViewBuffer].mMaxSprites)
         {
-            XSpark *spark = &sparkList.mSprintListView[view->EVIEW_ID - 1].mLockedVB[i];
+            XSpark *spark = &sparkList.mSprintListView[sparkList.mCurrViewBuffer].mLockedVB[i];
 
-            sparkList.mSprintListView[view->EVIEW_ID - 1].mNumPolys = i;
+            sparkList.mSprintListView[sparkList.mCurrViewBuffer].mNumPolys[sparkList.mSprintListView[sparkList.mCurrViewBuffer].mCurrentBuffer] = i;
 
             if (spark)
             {
@@ -1628,44 +1534,16 @@ void XSpriteManager::AddParticle(eView* view, NGParticle* particleList, unsigned
         }
     }
     
-    if (bBatching && sparkList.mSprintListView[view->EVIEW_ID - 1].mpVB)
+    if (bBatching && sparkList.mSprintListView[sparkList.mCurrViewBuffer].mpVB[sparkList.mSprintListView[sparkList.mCurrViewBuffer].mCurrentBuffer])
         bBatching = false;
 
-    Unlock(view->EVIEW_ID);
-
-    (void)view; // silence
+    sparkList.Unlock();
 }
 
-void ParticleList::GeneratePolys(eView* view)
+void ParticleList::GeneratePolys()
 {
     if (mNumParticles)
-        NGSpriteManager.AddParticle(view, mParticles, mNumParticles);
-}
-
-void DrawXenonEmitters(eView *view)
-{
-    XenonEffectDef* mpBegin; // ebx
-    XenonEffectDef* i; // edx
-    //NGEffect effect; // [esp-4h] [ebp-84h]
-    XenonEffectDef effectDef; // [esp+20h] [ebp-60h] BYREF
-
-    gParticleList.AgeParticles(gFrameDT);
-    mpBegin = gNGEffectList.mpBegin;
-    for (i = gNGEffectList.mpEnd; mpBegin != i; ++mpBegin)
-    {
-        memcpy(&effectDef, mpBegin, sizeof(effectDef));
-        if (!effectDef.piggyback_effect || (*((uint32_t*)effectDef.piggyback_effect + 6) & 0x10) != 0)
-        {
-            NGEffect effect{ &effectDef, gFrameDT };
-            i = gNGEffectList.mpEnd;
-        }
-    }
-    eastl_vector_erase_XenonEffectDef_Abstract(&gNGEffectList, gNGEffectList.mpBegin, gNGEffectList.mpEnd);
-    
-    if (gFrameDT > 0.0f)
-        gParticleList.GeneratePolys(view);
-
-    gFrameDT = 0.0f;
+        NGSpriteManager.AddSpark(mParticles, mNumParticles);
 }
 
 void XSpriteManager::Init()
@@ -1719,7 +1597,6 @@ void __stdcall EmitterSystem_Render_Hook(eView* view)
     EmitterSystem_Render(that, view);
     if (*(uint32_t*)GAMEFLOWSTATUS_ADDR == 6)
     {
-        DrawXenonEmitters(view);
         NGSpriteManager.DrawBatch(view);
     }
     //printf("VertexBuffer: 0x%X\n", mpVB);
@@ -1752,14 +1629,14 @@ uint32_t SparkFC = 0;
 void AddXenonEffect_Spark_Hook(void* piggyback_fx, Attrib::Collection* spec, UMath::Matrix4* mat, UMath::Vector4* vel, float intensity)
 {
     if (!bLimitSparkRate)
-        return AddXenonEffect(piggyback_fx, spec, mat, vel, intensity * SparkIntensity);
+        return AddXenonEffect(piggyback_fx, spec, mat, vel);
 
     if ((SparkFC + SparkFrameDelay) <= eFrameCounter)
     {
         if (SparkFC != eFrameCounter)
         {
             SparkFC = eFrameCounter;
-            AddXenonEffect(piggyback_fx, spec, mat, vel, intensity * SparkIntensity);
+            AddXenonEffect(piggyback_fx, spec, mat, vel);
         }
     }
 }
@@ -1807,25 +1684,15 @@ void AddXenonEffect_Contrail_Hook(void* piggyback_fx, Attrib::Collection* spec, 
     // TEST CODE
 #else
 
-    float newintensity = ContrailMaxIntensity;
-
-    if (!bUseCGStyle)
-    {
-        float carspeed = (UMath::Length(*(UMath::Vector3*)vel) - ContrailSpeed) / ContrailSpeed;
-        newintensity = UMath::Lerp(ContrailMinIntensity, ContrailMaxIntensity, carspeed);
-        if (newintensity > ContrailMaxIntensity)
-            newintensity = ContrailMaxIntensity;
-    }
-
     if (!bLimitContrailRate)
-        return AddXenonEffect(piggyback_fx, spec, mat, vel, newintensity);
+        return AddXenonEffect(piggyback_fx, spec, mat, vel);
 
     if ((ContrailFC + ContrailFrameDelay) <= eFrameCounter)
     {
         if (ContrailFC != eFrameCounter)
         {
             ContrailFC = eFrameCounter;
-            AddXenonEffect(piggyback_fx, spec, mat, vel, newintensity);
+            AddXenonEffect(piggyback_fx, spec, mat, vel);
         }
     }
 #endif
@@ -1833,7 +1700,26 @@ void AddXenonEffect_Contrail_Hook(void* piggyback_fx, Attrib::Collection* spec, 
 
 void UpdateXenonEmitters(float dt)
 {
-    gFrameDT = dt;
+    XenonEffectDef* mpBegin; // ebx
+    XenonEffectDef* i; // edx
+    //NGEffect effect; // [esp-4h] [ebp-84h]
+    XenonEffectDef effectDef; // [esp+20h] [ebp-60h] BYREF
+
+    gParticleList.AgeParticles(dt);
+    mpBegin = gNGEffectList.mpBegin;
+    for (i = gNGEffectList.mpEnd; mpBegin != i; ++mpBegin)
+    {
+        memcpy(&effectDef, mpBegin, sizeof(effectDef));
+        if (!effectDef.piggyback_effect || (*((uint32_t*)effectDef.piggyback_effect + 6) & 0x10) != 0)
+        {
+            NGEffect effect{ &effectDef, dt };
+            i = gNGEffectList.mpEnd;
+        }
+    }
+    eastl_vector_erase_XenonEffectDef_Abstract(&gNGEffectList, gNGEffectList.mpBegin, gNGEffectList.mpEnd);
+
+    //if (dt > 0.0f)
+    gParticleList.GeneratePolys();
 }
 
 void __stdcall EmitterSystem_Update_Hook(float dt)
