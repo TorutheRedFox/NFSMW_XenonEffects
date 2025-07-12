@@ -6,6 +6,7 @@
 // - particles stay in the world after restart - MAKE A XENON EFFECT RESET
 //
 
+#include <EABase/eabase.h>
 #include "stdio.h"
 #include <injector\injector.hpp>
 #include <mINI\src\mini\ini.h>
@@ -96,12 +97,14 @@ void operator delete(void* ptr)
 
 void* operator new[](size_t size, const char* pName, int flags, unsigned debugFlags, const char* file, int line)
 {
+    (void)pName; (void)line; (void)debugFlags; (void)file;
     return bMALLOC(size, pName, line, flags);
 }
 
 void* operator new[](size_t size, size_t alignment, size_t alignmentOffset, const char* pName,
     int flags, unsigned debugFlags, const char* file, int line)
 {
+    (void)pName; (void)line; (void)debugFlags; (void)alignment; (void)alignmentOffset; (void)file;
     return bMALLOC(size, pName, line, flags);
 }
 

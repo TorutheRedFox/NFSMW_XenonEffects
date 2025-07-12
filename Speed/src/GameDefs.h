@@ -4,6 +4,12 @@
 #ifndef GAMEDEFS_H
 #define GAMEDEFS_H
 
+#include <EABase/eabase.h>
+
+#if EA_PRAGMA_ONCE_SUPPORTED
+#pragma once
+#endif
+
 #include <d3d9.h>
 #include <cstdint>
 #include <UMath/UMath.h>
@@ -283,7 +289,7 @@ namespace UTL
         class Allocator
         {
         public:
-            Allocator(const char* pName) {};
+            Allocator(const char* pName) { (void)pName; };
 
             inline void* allocate(size_t n)
             {

@@ -1,7 +1,11 @@
 #ifndef UMATH_H
 #define UMATH_H
 
-#include <corecrt_math.h>
+#include <EABase/eabase.h>
+
+#if EA_PRAGMA_ONCE_SUPPORTED
+#pragma once
+#endif
 
 namespace UMath
 {

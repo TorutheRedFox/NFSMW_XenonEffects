@@ -154,7 +154,6 @@
     <ClInclude Include="XenonEffects\src\Attrib\AttribInstance.h" />
     <ClInclude Include="XenonEffects\src\Attrib\AttribNode.h" />
     <ClInclude Include="XenonEffects\src\Render\xSprites.hpp" />
-    <ClInclude Include="XenonEffects\src\targetver.h" />
     <ClInclude Include="XenonEffects\src\UMath\UMath.h" />
     <ClInclude Include="XenonEffects\src\xSpark.hpp" />
   </ItemGroup>

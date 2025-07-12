@@ -2,6 +2,12 @@
 #ifndef XSPRITES_HPP
 #define XSPRITES_HPP
 
+#include <EABase/eabase.h>
+
+#if EA_PRAGMA_ONCE_SUPPORTED
+#pragma once
+#endif
+
 #include <d3d9.h>
 #include <d3dx9.h>
 #include <Speed\src\GameDefs.h>

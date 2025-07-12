@@ -2,6 +2,12 @@
 #ifndef XSPARK_HPP
 #define XSPARK_HPP
 
+#include <EABase/eabase.h>
+
+#if EA_PRAGMA_ONCE_SUPPORTED
+#pragma once
+#endif
+
 // config stuff
 extern bool bContrails;
 extern bool bLimitContrailRate;
@@ -109,4 +115,4 @@ extern void AddXenonEffect(
 
 extern void UpdateXenonEmitters(float dt);
 
-#endif
+#endif // XSPARK_HPP

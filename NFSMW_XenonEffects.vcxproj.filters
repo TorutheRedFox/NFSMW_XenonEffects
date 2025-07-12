@@ -35,7 +35,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="XenonEffects\src\targetver.h" />
     <ClInclude Include="XenonEffects\src\UMath\UMath.h">
       <Filter>UMath</Filter>
     </ClInclude>
