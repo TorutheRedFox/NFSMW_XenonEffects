@@ -1,43 +1,211 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="dllmain.cpp" />
-    <ClCompile Include="Attrib\Attrib.cpp">
+    <ClCompile Include="XenonEffects\src\dllmain.cpp" />
+    <ClCompile Include="XenonEffects\src\Attrib\Attrib.cpp">
       <Filter>Attrib</Filter>
+    </ClCompile>
+    <ClCompile Include="XenonEffects\src\Render\xSprites.cpp">
+      <Filter>Render</Filter>
+    </ClCompile>
+    <ClCompile Include="XenonEffects\src\xSpark.cpp" />
+    <ClCompile Include="XenonEffects\src\UMath\UMath.cpp">
+      <Filter>UMath</Filter>
+    </ClCompile>
+    <ClCompile Include="Packages\EASTL\source\allocator.cpp">
+      <Filter>Packages\EASTL</Filter>
+    </ClCompile>
+    <ClCompile Include="Packages\EASTL\source\assert.cpp">
+      <Filter>Packages\EASTL</Filter>
+    </ClCompile>
+    <ClCompile Include="Packages\EASTL\source\fixed_pool.cpp">
+      <Filter>Packages\EASTL</Filter>
+    </ClCompile>
+    <ClCompile Include="Packages\EASTL\source\hashtable.cpp">
+      <Filter>Packages\EASTL</Filter>
+    </ClCompile>
+    <ClCompile Include="Packages\EASTL\source\red_black_tree.cpp">
+      <Filter>Packages\EASTL</Filter>
+    </ClCompile>
+    <ClCompile Include="Packages\EASTL\source\string.cpp">
+      <Filter>Packages\EASTL</Filter>
+    </ClCompile>
+    <ClCompile Include="Packages\EAAssert\source\eaassert.cpp">
+      <Filter>Packages\EAAssert</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="targetver.h" />
-    <ClInclude Include="UMath\UMath.h">
+    <ClInclude Include="XenonEffects\src\UMath\UMath.h">
       <Filter>UMath</Filter>
     </ClInclude>
-    <ClInclude Include="Attrib\Attrib.h">
+    <ClInclude Include="XenonEffects\src\Attrib\Attrib.h">
       <Filter>Attrib</Filter>
     </ClInclude>
-    <ClInclude Include="Attrib\AttribCollection.h">
+    <ClInclude Include="XenonEffects\src\Attrib\AttribCollection.h">
       <Filter>Attrib</Filter>
     </ClInclude>
-    <ClInclude Include="Attrib\AttribCore.h">
+    <ClInclude Include="XenonEffects\src\Attrib\AttribCore.h">
       <Filter>Attrib</Filter>
     </ClInclude>
-    <ClInclude Include="Attrib\AttribHashMap.h">
+    <ClInclude Include="XenonEffects\src\Attrib\AttribHashMap.h">
       <Filter>Attrib</Filter>
     </ClInclude>
-    <ClInclude Include="Attrib\AttribArray.h">
+    <ClInclude Include="XenonEffects\src\Attrib\AttribArray.h">
       <Filter>Attrib</Filter>
     </ClInclude>
-    <ClInclude Include="Attrib\AttribInstance.h">
+    <ClInclude Include="XenonEffects\src\Attrib\AttribInstance.h">
       <Filter>Attrib</Filter>
     </ClInclude>
-    <ClInclude Include="Attrib\AttribNode.h">
+    <ClInclude Include="XenonEffects\src\Attrib\AttribNode.h">
       <Filter>Attrib</Filter>
     </ClInclude>
-    <ClInclude Include="Attrib\AttribAttribute.h">
+    <ClInclude Include="XenonEffects\src\Attrib\AttribAttribute.h">
       <Filter>Attrib</Filter>
+    </ClInclude>
+    <ClInclude Include="speed\src\GameDefs.h">
+      <Filter>Speed</Filter>
+    </ClInclude>
+    <ClInclude Include="XenonEffects\src\Render\xSprites.hpp">
+      <Filter>Render</Filter>
+    </ClInclude>
+    <ClInclude Include="XenonEffects\src\xSpark.hpp" />
+    <ClInclude Include="Packages\EAAssert\include\EAAssert\eaassert.h">
+      <Filter>Packages\EAAssert</Filter>
+    </ClInclude>
+    <ClInclude Include="Packages\EABase\include\Common\EABase\config\eacompiler.h">
+      <Filter>Packages\EABase</Filter>
+    </ClInclude>
+    <ClInclude Include="Packages\EABase\include\Common\EABase\config\eacompilertraits.h">
+      <Filter>Packages\EABase</Filter>
+    </ClInclude>
+    <ClInclude Include="Packages\EABase\include\Common\EABase\config\eaplatform.h">
+      <Filter>Packages\EABase</Filter>
+    </ClInclude>
+    <ClInclude Include="Packages\EABase\include\Common\EABase\eabase.h">
+      <Filter>Packages\EABase</Filter>
+    </ClInclude>
+    <ClInclude Include="Packages\EABase\include\Common\EABase\earesult.h">
+      <Filter>Packages\EABase</Filter>
+    </ClInclude>
+    <ClInclude Include="Packages\EASTL\include\EASTL\algorithm.h">
+      <Filter>Packages\EASTL</Filter>
+    </ClInclude>
+    <ClInclude Include="Packages\EASTL\include\EASTL\allocator.h">
+      <Filter>Packages\EASTL</Filter>
+    </ClInclude>
+    <ClInclude Include="Packages\EASTL\include\EASTL\bitset.h">
+      <Filter>Packages\EASTL</Filter>
+    </ClInclude>
+    <ClInclude Include="Packages\EASTL\include\EASTL\bonus\sort_extra.h">
+      <Filter>Packages\EASTL</Filter>
+    </ClInclude>
+    <ClInclude Include="Packages\EASTL\include\EASTL\core_allocator_adapter.h">
+      <Filter>Packages\EASTL</Filter>
+    </ClInclude>
+    <ClInclude Include="Packages\EASTL\include\EASTL\fixed_allocator.h">
+      <Filter>Packages\EASTL</Filter>
+    </ClInclude>
+    <ClInclude Include="Packages\EASTL\include\EASTL\fixed_hash_map.h">
+      <Filter>Packages\EASTL</Filter>
+    </ClInclude>
+    <ClInclude Include="Packages\EASTL\include\EASTL\fixed_hash_set.h">
+      <Filter>Packages\EASTL</Filter>
+    </ClInclude>
+    <ClInclude Include="Packages\EASTL\include\EASTL\fixed_list.h">
+      <Filter>Packages\EASTL</Filter>
+    </ClInclude>
+    <ClInclude Include="Packages\EASTL\include\EASTL\fixed_map.h">
+      <Filter>Packages\EASTL</Filter>
+    </ClInclude>
+    <ClInclude Include="Packages\EASTL\include\EASTL\fixed_set.h">
+      <Filter>Packages\EASTL</Filter>
+    </ClInclude>
+    <ClInclude Include="Packages\EASTL\include\EASTL\fixed_string.h">
+      <Filter>Packages\EASTL</Filter>
+    </ClInclude>
+    <ClInclude Include="Packages\EASTL\include\EASTL\fixed_substring.h">
+      <Filter>Packages\EASTL</Filter>
+    </ClInclude>
+    <ClInclude Include="Packages\EASTL\include\EASTL\fixed_vector.h">
+      <Filter>Packages\EASTL</Filter>
+    </ClInclude>
+    <ClInclude Include="Packages\EASTL\include\EASTL\functional.h">
+      <Filter>Packages\EASTL</Filter>
+    </ClInclude>
+    <ClInclude Include="Packages\EASTL\include\EASTL\hash_map.h">
+      <Filter>Packages\EASTL</Filter>
+    </ClInclude>
+    <ClInclude Include="Packages\EASTL\include\EASTL\hash_set.h">
+      <Filter>Packages\EASTL</Filter>
+    </ClInclude>
+    <ClInclude Include="Packages\EASTL\include\EASTL\heap.h">
+      <Filter>Packages\EASTL</Filter>
+    </ClInclude>
+    <ClInclude Include="Packages\EASTL\include\EASTL\internal\config.h">
+      <Filter>Packages\EASTL</Filter>
+    </ClInclude>
+    <ClInclude Include="Packages\EASTL\include\EASTL\internal\eastl_rw.h">
+      <Filter>Packages\EASTL</Filter>
+    </ClInclude>
+    <ClInclude Include="Packages\EASTL\include\EASTL\internal\fixed_pool.h">
+      <Filter>Packages\EASTL</Filter>
+    </ClInclude>
+    <ClInclude Include="Packages\EASTL\include\EASTL\internal\generic_iterator.h">
+      <Filter>Packages\EASTL</Filter>
+    </ClInclude>
+    <ClInclude Include="Packages\EASTL\include\EASTL\internal\hashtable.h">
+      <Filter>Packages\EASTL</Filter>
+    </ClInclude>
+    <ClInclude Include="Packages\EASTL\include\EASTL\internal\red_black_tree.h">
+      <Filter>Packages\EASTL</Filter>
+    </ClInclude>
+    <ClInclude Include="Packages\EASTL\include\EASTL\internal\type_compound.h">
+      <Filter>Packages\EASTL</Filter>
+    </ClInclude>
+    <ClInclude Include="Packages\EASTL\include\EASTL\internal\type_fundamental.h">
+      <Filter>Packages\EASTL</Filter>
+    </ClInclude>
+    <ClInclude Include="Packages\EASTL\include\EASTL\internal\type_pod.h">
+      <Filter>Packages\EASTL</Filter>
+    </ClInclude>
+    <ClInclude Include="Packages\EASTL\include\EASTL\internal\type_properties.h">
+      <Filter>Packages\EASTL</Filter>
+    </ClInclude>
+    <ClInclude Include="Packages\EASTL\include\EASTL\internal\type_transformations.h">
+      <Filter>Packages\EASTL</Filter>
+    </ClInclude>
+    <ClInclude Include="Packages\EASTL\include\EASTL\iterator.h">
+      <Filter>Packages\EASTL</Filter>
+    </ClInclude>
+    <ClInclude Include="Packages\EASTL\include\EASTL\list.h">
+      <Filter>Packages\EASTL</Filter>
+    </ClInclude>
+    <ClInclude Include="Packages\EASTL\include\EASTL\map.h">
+      <Filter>Packages\EASTL</Filter>
+    </ClInclude>
+    <ClInclude Include="Packages\EASTL\include\EASTL\memory.h">
+      <Filter>Packages\EASTL</Filter>
+    </ClInclude>
+    <ClInclude Include="Packages\EASTL\include\EASTL\set.h">
+      <Filter>Packages\EASTL</Filter>
+    </ClInclude>
+    <ClInclude Include="Packages\EASTL\include\EASTL\sort.h">
+      <Filter>Packages\EASTL</Filter>
+    </ClInclude>
+    <ClInclude Include="Packages\EASTL\include\EASTL\string.h">
+      <Filter>Packages\EASTL</Filter>
+    </ClInclude>
+    <ClInclude Include="Packages\EASTL\include\EASTL\type_traits.h">
+      <Filter>Packages\EASTL</Filter>
+    </ClInclude>
+    <ClInclude Include="Packages\EASTL\include\EASTL\utility.h">
+      <Filter>Packages\EASTL</Filter>
+    </ClInclude>
+    <ClInclude Include="Packages\EASTL\include\EASTL\vector.h">
+      <Filter>Packages\EASTL</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="NFSMW_XenonEffects.ini" />
     <None Include="post-build\postbuild.bat">
       <Filter>post-build</Filter>
     </None>
@@ -62,5 +230,26 @@
     <Filter Include="UMath">
       <UniqueIdentifier>{e1341417-c79a-4863-a372-f573a4360f20}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Speed">
+      <UniqueIdentifier>{da61c712-88df-46e7-b753-02a779af6400}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Render">
+      <UniqueIdentifier>{0f071db2-8e34-41e9-81da-a4bdec41869f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Packages">
+      <UniqueIdentifier>{fbe8419e-d45e-41ec-abf7-2492d9ae3b31}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Packages\EABase">
+      <UniqueIdentifier>{c3fd7070-bc3d-4548-ae2c-f359d19b98e3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Packages\EAAssert">
+      <UniqueIdentifier>{008a9a1d-8e62-44a4-8f64-0235dd289ec9}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Packages\EASTL">
+      <UniqueIdentifier>{6c969fe8-7e9b-413b-906d-d35bf180dd30}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <CopyFileToFolders Include="NFSMW_XenonEffects.ini" />
   </ItemGroup>
 </Project>

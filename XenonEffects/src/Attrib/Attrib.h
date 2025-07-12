@@ -199,72 +199,72 @@ namespace Attrib
             OPTIONAL_VALUE(RefSpec, shaderspec);
         );
 
-        //DEF_INSTANCE(
-        //    fuelcell_effect // name
-        //    , 
-        //    bool doTest; // layout
-        //    ,
-        //    VALUE(bool, doTest); // value getters
-        //    OPTIONAL_ARRAY(Attrib::RefSpec, NGEmitter);
-        //);
-        //
-        //DEF_INSTANCE(
-        //    fuelcell_emitter // name
-        //    ,
-        //    UMath::Vector4 VolumeCenter;
-        //    UMath::Vector4 VelocityDelta;
-        //    UMath::Vector4 VolumeExtent;
-        //    UMath::Vector4 VelocityInherit;
-        //    UMath::Vector4 VelocityStart;
-        //    UMath::Vector4 Colour1;
-        //    Attrib::RefSpec emitteruv;
-        //    float Life;
-        //    float NumParticlesVariance;
-        //    float GravityStart;
-        //    float HeightStart;
-        //    float GravityDelta;
-        //    float LengthStart;
-        //    float LengthDelta;
-        //    float LifeVariance;
-        //    float NumParticles;
-        //    int16_t Spin;
-        //    int8_t zSprite;
-        //    int8_t zContrail;
-        //    ,
-        //    VALUE(UMath::Vector4, VolumeCenter); // value getters
-        //    VALUE(UMath::Vector4, VelocityDelta);
-        //    VALUE(UMath::Vector4, VolumeExtent);
-        //    VALUE(UMath::Vector4, VelocityInherit);
-        //    VALUE(UMath::Vector4, VelocityStart);
-        //    VALUE(UMath::Vector4, Colour1);
-        //    VALUE(Attrib::RefSpec, emitteruv);
-        //    VALUE(float, Life);
-        //    VALUE(float, NumParticlesVariance);
-        //    VALUE(float, GravityStart);
-        //    VALUE(float, HeightStart);
-        //    VALUE(float, GravityDelta);
-        //    VALUE(float, LengthStart);
-        //    VALUE(float, LengthDelta);
-        //    VALUE(float, LifeVariance);
-        //    VALUE(float, NumParticles);
-        //    VALUE(int16_t, Spin);
-        //    VALUE(int8_t, zSprite);
-        //    VALUE(int8_t, zContrail);
-        //);
-        //
-        //DEF_INSTANCE(
-        //    emitteruv // name
-        //    , 
-        //    float EndV; // layout
-        //    float StartU;
-        //    float EndU;
-        //    float StartV;
-        //    ,
-        //    VALUE(float, EndV); // value getters
-        //    VALUE(float, StartU);
-        //    VALUE(float, EndU);
-        //    VALUE(float, StartV);
-        //);
+        DEF_INSTANCE(
+            fuelcell_effect // name
+            , 
+            bool doTest; // layout
+            ,
+            VALUE(bool, doTest); // value getters
+            OPTIONAL_ARRAY(Attrib::RefSpec, NGEmitter);
+        );
+
+        DEF_INSTANCE(
+            fuelcell_emitter // name
+            ,
+            UMath::Vector4 VolumeCenter;
+            UMath::Vector4 VelocityDelta;
+            UMath::Vector4 VolumeExtent;
+            UMath::Vector4 VelocityInherit;
+            UMath::Vector4 VelocityStart;
+            UMath::Vector4 Colour1;
+            Attrib::RefSpec emitteruv;
+            float Life;
+            float NumParticlesVariance;
+            float GravityStart;
+            float HeightStart;
+            float GravityDelta;
+            float LengthStart;
+            float LengthDelta;
+            float LifeVariance;
+            float NumParticles;
+            int16_t Spin;
+            int8_t zSprite;
+            int8_t zContrail;
+            ,
+            VALUE(UMath::Vector4, VolumeCenter); // value getters
+            VALUE(UMath::Vector4, VelocityDelta);
+            VALUE(UMath::Vector4, VolumeExtent);
+            VALUE(UMath::Vector4, VelocityInherit);
+            VALUE(UMath::Vector4, VelocityStart);
+            VALUE(UMath::Vector4, Colour1);
+            VALUE(Attrib::RefSpec, emitteruv);
+            VALUE(float, Life);
+            VALUE(float, NumParticlesVariance);
+            VALUE(float, GravityStart);
+            VALUE(float, HeightStart);
+            VALUE(float, GravityDelta);
+            VALUE(float, LengthStart);
+            VALUE(float, LengthDelta);
+            VALUE(float, LifeVariance);
+            VALUE(float, NumParticles);
+            VALUE(int16_t, Spin);
+            VALUE(int8_t, zSprite);
+            VALUE(int8_t, zContrail);
+        );
+
+        DEF_INSTANCE(
+            emitteruv // name
+            , 
+            float EndV; // layout
+            float StartU;
+            float EndU;
+            float StartV;
+            ,
+            VALUE(float, EndV); // value getters
+            VALUE(float, StartU);
+            VALUE(float, EndU);
+            VALUE(float, StartV);
+        );
 
         DEF_INSTANCE_NO_LAYOUT(
             lightshaders // name
