@@ -297,6 +297,18 @@ namespace UMath
 
         return out;
     }
+	
+    namespace fpu
+    {
+        extern void RotateTranslate(const UMath::Vector4& v, const UMath::Matrix4& m, UMath::Vector4& result);
+        extern void Scalexyz(const UMath::Vector4& a, const UMath::Vector4& b, UMath::Vector4& result);
+        extern void Scalexyz(const UMath::Vector4& a, const float scaleby, UMath::Vector4& result);
+        extern void Rotate(const UMath::Vector4& v, const UMath::Matrix4& m, UMath::Vector4& result);
+        extern void Add(const UMath::Vector4& a, const UMath::Vector4& b, UMath::Vector4& result);
+        extern void Add(const UMath::Vector3& a, const UMath::Vector3& b, UMath::Vector4& result);
+        extern void ScaleAdd(const UMath::Vector4* a, const float scaleby, const UMath::Vector4* b, UMath::Vector4* result);
+        extern void ScaleAdd(const UMath::Vector3& a, const float scaleby, const UMath::Vector3& b, UMath::Vector3& result);
+    }
 }
 
 #endif // UMATH_H
