@@ -57,7 +57,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)\xenoneffects\src;$(SolutionDir)\packages;$(DXSDK_DIR)Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\packages\eaassert\include;$(SolutionDir)\packages\eabase\include\common;$(SolutionDir)\packages\eastl\include;$(SolutionDir);$(SolutionDir)\xenoneffects\src;$(SolutionDir)\packages;$(DXSDK_DIR)Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp20</LanguageStandard>
       <ConformanceMode>false</ConformanceMode>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
@@ -83,7 +83,7 @@
       <PreprocessorDefinitions>WIN32;NDEBUG;_WINDOWS;_USRDLL;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <LanguageStandard>stdcpp20</LanguageStandard>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)\xenoneffects\src;$(SolutionDir)\packages;$(DXSDK_DIR)Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)\packages\eaassert\include;$(SolutionDir)\packages\eabase\include\common;$(SolutionDir)\packages\eastl\include;$(SolutionDir);$(SolutionDir)\xenoneffects\src;$(SolutionDir)\packages;$(DXSDK_DIR)Include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <FloatingPointModel>Fast</FloatingPointModel>
       <FloatingPointExceptions>false</FloatingPointExceptions>
@@ -99,6 +99,51 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Packages\EAAssert\include\EAAssert\eaassert.h" />
+    <ClInclude Include="Packages\EABase\include\Common\EABase\config\eacompiler.h" />
+    <ClInclude Include="Packages\EABase\include\Common\EABase\config\eacompilertraits.h" />
+    <ClInclude Include="Packages\EABase\include\Common\EABase\config\eaplatform.h" />
+    <ClInclude Include="Packages\EABase\include\Common\EABase\eabase.h" />
+    <ClInclude Include="Packages\EABase\include\Common\EABase\earesult.h" />
+    <ClInclude Include="Packages\EASTL\include\EASTL\algorithm.h" />
+    <ClInclude Include="Packages\EASTL\include\EASTL\allocator.h" />
+    <ClInclude Include="Packages\EASTL\include\EASTL\bitset.h" />
+    <ClInclude Include="Packages\EASTL\include\EASTL\bonus\sort_extra.h" />
+    <ClInclude Include="Packages\EASTL\include\EASTL\core_allocator_adapter.h" />
+    <ClInclude Include="Packages\EASTL\include\EASTL\fixed_allocator.h" />
+    <ClInclude Include="Packages\EASTL\include\EASTL\fixed_hash_map.h" />
+    <ClInclude Include="Packages\EASTL\include\EASTL\fixed_hash_set.h" />
+    <ClInclude Include="Packages\EASTL\include\EASTL\fixed_list.h" />
+    <ClInclude Include="Packages\EASTL\include\EASTL\fixed_map.h" />
+    <ClInclude Include="Packages\EASTL\include\EASTL\fixed_set.h" />
+    <ClInclude Include="Packages\EASTL\include\EASTL\fixed_string.h" />
+    <ClInclude Include="Packages\EASTL\include\EASTL\fixed_substring.h" />
+    <ClInclude Include="Packages\EASTL\include\EASTL\fixed_vector.h" />
+    <ClInclude Include="Packages\EASTL\include\EASTL\functional.h" />
+    <ClInclude Include="Packages\EASTL\include\EASTL\hash_map.h" />
+    <ClInclude Include="Packages\EASTL\include\EASTL\hash_set.h" />
+    <ClInclude Include="Packages\EASTL\include\EASTL\heap.h" />
+    <ClInclude Include="Packages\EASTL\include\EASTL\internal\config.h" />
+    <ClInclude Include="Packages\EASTL\include\EASTL\internal\eastl_rw.h" />
+    <ClInclude Include="Packages\EASTL\include\EASTL\internal\fixed_pool.h" />
+    <ClInclude Include="Packages\EASTL\include\EASTL\internal\generic_iterator.h" />
+    <ClInclude Include="Packages\EASTL\include\EASTL\internal\hashtable.h" />
+    <ClInclude Include="Packages\EASTL\include\EASTL\internal\red_black_tree.h" />
+    <ClInclude Include="Packages\EASTL\include\EASTL\internal\type_compound.h" />
+    <ClInclude Include="Packages\EASTL\include\EASTL\internal\type_fundamental.h" />
+    <ClInclude Include="Packages\EASTL\include\EASTL\internal\type_pod.h" />
+    <ClInclude Include="Packages\EASTL\include\EASTL\internal\type_properties.h" />
+    <ClInclude Include="Packages\EASTL\include\EASTL\internal\type_transformations.h" />
+    <ClInclude Include="Packages\EASTL\include\EASTL\iterator.h" />
+    <ClInclude Include="Packages\EASTL\include\EASTL\list.h" />
+    <ClInclude Include="Packages\EASTL\include\EASTL\map.h" />
+    <ClInclude Include="Packages\EASTL\include\EASTL\memory.h" />
+    <ClInclude Include="Packages\EASTL\include\EASTL\set.h" />
+    <ClInclude Include="Packages\EASTL\include\EASTL\sort.h" />
+    <ClInclude Include="Packages\EASTL\include\EASTL\string.h" />
+    <ClInclude Include="Packages\EASTL\include\EASTL\type_traits.h" />
+    <ClInclude Include="Packages\EASTL\include\EASTL\utility.h" />
+    <ClInclude Include="Packages\EASTL\include\EASTL\vector.h" />
     <ClInclude Include="speed\src\GameDefs.h" />
     <ClInclude Include="XenonEffects\src\Attrib\Attrib.h" />
     <ClInclude Include="XenonEffects\src\Attrib\AttribArray.h" />
@@ -114,6 +159,13 @@
     <ClInclude Include="XenonEffects\src\xSpark.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Packages\EAAssert\source\eaassert.cpp" />
+    <ClCompile Include="Packages\EASTL\source\allocator.cpp" />
+    <ClCompile Include="Packages\EASTL\source\assert.cpp" />
+    <ClCompile Include="Packages\EASTL\source\fixed_pool.cpp" />
+    <ClCompile Include="Packages\EASTL\source\hashtable.cpp" />
+    <ClCompile Include="Packages\EASTL\source\red_black_tree.cpp" />
+    <ClCompile Include="Packages\EASTL\source\string.cpp" />
     <ClCompile Include="XenonEffects\src\Attrib\Attrib.cpp" />
     <ClCompile Include="XenonEffects\src\dllmain.cpp">
       <CompileAsManaged Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">false</CompileAsManaged>

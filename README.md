@@ -24,7 +24,9 @@ This feature was famously not included in the PC version of NFS Most Wanted and 
 
 - Particle effect list initialization, generation & erasing (EASTL list/vector)
 
-- Particle bouncing
+- Particle bouncing (optional)
+
+- Contrail intensity based on speed (optional)
 
 ## What doesn't work
 
@@ -44,6 +46,4 @@ This feature was famously not included in the PC version of NFS Most Wanted and 
 
 - Reconfigure the .ini in the scripts folder to your liking
 
-- Make sure that texture filtering is turned on in video settings! Otherwise sparks will be drawn at wrong coordinates!
-
-- In case you're using NextGenGraphics.asi, please enable `UseD3DDeviceTexture` in the .ini
+- In case you're still using NextGenGraphics.asi, you may need to enable `UseD3DDeviceTexture` in the .ini

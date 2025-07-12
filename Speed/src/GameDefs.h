@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <UMath/UMath.h>
 #include <d3dx9.h>
+#include <EASTL/allocator.h>
 
 #define GLOBAL_D3DDEVICE 0x00982BDC
 #define GAMEFLOWSTATUS_ADDR 0x00925E90
@@ -60,8 +61,61 @@ class bList {
 
 template <class T> class bTList : bList {};
 
+
 struct RenderState {
     uint32_t _bf_0;
+};
+
+enum TextureScrollType {
+    TEXSCROLL_OFFSETSCALE = 3,
+    TEXSCROLL_SNAP = 2,
+    TEXSCROLL_SMOOTH = 1,
+    TEXSCROLL_NONE = 0,
+};
+enum TextureLockType {
+    TEXLOCK_READWRITE = 2,
+    TEXLOCK_WRITE = 1,
+    TEXLOCK_READ = 0,
+};
+enum TextureCompressionType {
+    TEXCOMP_8BIT_64 = 129,
+    TEXCOMP_8BIT_16 = 128,
+    TEXCOMP_16BIT_3555 = 19,
+    TEXCOMP_16BIT_565 = 18,
+    TEXCOMP_16BIT_1555 = 17,
+    TEXCOMP_DXTC5 = 38,
+    TEXCOMP_DXTC3 = 36,
+    TEXCOMP_DXTC1 = 34,
+    TEXCOMP_S3TC = 34,
+    TEXCOMP_DXT = 33,
+    TEXCOMP_32BIT = 32,
+    TEXCOMP_24BIT = 24,
+    TEXCOMP_16BIT = 16,
+    TEXCOMP_8BIT = 8,
+    TEXCOMP_4BIT = 4,
+    TEXCOMP_DEFAULT = 0,
+};
+enum TextureAlphaUsageType {
+    TEXUSAGE_MODULATED = 2,
+    TEXUSAGE_PUNCHTHRU = 1,
+    TEXUSAGE_NONE = 0,
+};
+enum TextureAlphaBlendType {
+    TEXBLEND_DEST_OVERBRIGHT = 8,
+    TEXBLEND_DEST_SUBTRACTIVE = 7,
+    TEXBLEND_DEST_ADDATIVE = 6,
+    TEXBLEND_DEST_BLEND = 5,
+    TEXBLEND_OVERBRIGHT = 4,
+    TEXBLEND_SUBTRACTIVE = 3,
+    TEXBLEND_ADDATIVE = 2,
+    TEXBLEND_BLEND = 1,
+    TEXBLEND_SRCCOPY = 0,
+};
+
+struct eTextureBucket : public bTNode<eTextureBucket> {
+    // total size: 0x14
+    struct TextureInfo* Texture; // offset 0x8, size 0x4
+    //struct bTList<eDataRender> DataRenderList; // offset 0xC, size 0x8
 };
 
 class TextureInfoPlatInfo : public bTNode<TextureInfoPlatInfo> {
@@ -76,7 +130,7 @@ public:
     uint16_t PunchThruValue;
     uint32_t format;
     LPDIRECT3DBASETEXTURE9 pD3DTexture;
-    void* pActiveBucket;
+    eTextureBucket* pActiveBucket;
 };
 
 class TextureInfoPlatInterface {
@@ -84,57 +138,49 @@ public:
     TextureInfoPlatInfo* PlatInfo;
 };
 
-class TextureInfo : public TextureInfoPlatInterface, public bTNode<TextureInfo> {
-public:
+struct TextureInfo : public TextureInfoPlatInterface, public bTNode<TextureInfo> {
     char DebugName[24];
     uint32_t NameHash;
     uint32_t ClassNameHash;
-
-private:
-    uint32_t Padding0;
-
-public:
-    uint32_t ImagePlacement;
-    uint32_t PalettePlacement;
-    uint32_t ImageSize;
-    uint32_t PaletteSize;
-    uint32_t BaseImageSize;
-    uint16_t Width;
-    uint16_t Height;
-    uint8_t ShiftWidth;
-    uint8_t ShiftHeight;
+    uint32_t ImageParentHash;
+    int32_t ImagePlacement;
+    int32_t PalettePlacement;
+    int32_t ImageSize;
+    int32_t PaletteSize;
+    int32_t BaseImageSize;
+    int16_t Width;
+    int16_t Height;
+    int8_t ShiftWidth;
+    int8_t ShiftHeight;
     uint8_t ImageCompressionType;
     uint8_t PaletteCompressionType;
-    uint16_t NumPaletteEntries;
-    uint8_t NumMipMapLevels;
-    uint8_t TilableUV;
-    uint8_t BiasLevel;
-    uint8_t RenderingOrder;
-    uint8_t ScrollType;
-    uint8_t UsedFlag;
-    uint8_t ApplyAlphaSorting;
-    uint8_t AlphaUsageType;
-    uint8_t AlphaBlendType;
-    uint8_t Flags;
-    uint8_t MipmapBiasType;
-
-private:
-    uint8_t Padding1;
-
-public:
-    uint16_t ScrollTimeStep;
-    uint16_t ScrollSpeedS;
-    uint16_t ScrollSpeedT;
-    uint16_t OffsetS;
-    uint16_t OffsetT;
-    uint16_t ScaleS;
-    uint16_t ScaleT;
-    void* pTexturePack;
+    int16_t NumPaletteEntries;
+    int8_t NumMipMapLevels;
+    int8_t TilableUV;
+    int8_t BiasLevel;
+    int8_t RenderingOrder;
+    int8_t ScrollType;
+    int8_t UsedFlag;
+    int8_t ApplyAlphaSorting;
+    int8_t AlphaUsageType;
+    int8_t AlphaBlendType;
+    int8_t Flags;
+    ///
+    int8_t MipmapBiasType; // not on GameCube... should probably investigate PS2 and Xbox
+    __declspec(align(2))
+    ///
+    int16_t ScrollTimeStep;
+    int16_t ScrollSpeedS;
+    int16_t ScrollSpeedT;
+    int16_t OffsetS;
+    int16_t OffsetT;
+    int16_t ScaleS;
+    int16_t ScaleT;
+    struct TexturePack* pTexturePack;
+    struct TextureInfo* pImageParent;
     void* ImageData;
     void* PaletteData;
-
-private:
-    uint32_t Padding2[2];
+    int32_t ReferenceCount;
 };
 
 struct eView
@@ -142,7 +188,6 @@ struct eView
     void* PlatInfo;
     uint32_t EVIEW_ID;
 };
-
 
 extern LPDIRECT3DDEVICE9& g_D3DDevice;
 
@@ -179,6 +224,8 @@ inline void(__thiscall* ResourceFile_BeginLoading)(void* ResourceFile, void* cal
 inline void(*ServiceResourceLoading)() = (void(*)())0x006626B0;
 inline uint32_t(__stdcall* sub_6DFAF0)() = (uint32_t(__stdcall*)())0x6DFAF0;
 inline uint32_t(* Attrib_StringHash32)(const char* k) = (uint32_t(*)(const char*))0x004519D0;
+inline void* (*bWareMalloc)(int size, const char* debug_text, int debug_line, int allocation_params) = (void* (*)(int, const char*, int, int))0x4653D0;
+inline void (*bFree)(void* ptr) = (void (*)(void*))0x4655F0;
 
 class WCollisionMgr
 {
@@ -186,9 +233,9 @@ public:
     class WorldCollisionInfo
     {
     public:
-        UMath::Vector4 fCollidePt;
-        UMath::Vector4 fNormal;
-        int pad[16];
+        UMath::Vector4 fCollidePt = { 0, 0, 0, 0 };
+        UMath::Vector4 fNormal = { 0, 0, 0, 0 };
+        int pad[16]{};
         WorldCollisionInfo()
         {
             ((void(__thiscall*)(WCollisionMgr::WorldCollisionInfo*))0x4048C0)(this);
@@ -229,37 +276,31 @@ struct EmitterGroup : bTNode<EmitterGroup>
     unsigned int pad;
 };
 
-namespace bstl
+namespace UTL
 {
-    class allocator
+    namespace Std
     {
-        inline void* allocate(size_t n)
+        class Allocator
         {
-            return FastMem_Alloc((void*)FASTMEM_ADDR, n, NULL);
-        }
+        public:
+            Allocator(const char* pName) {};
 
-        inline void* deallocate(void* p, size_t n)
-        {
-            FastMem_Free((void*)FASTMEM_ADDR, p, n, NULL);
-        }
-    };
-}
+            inline void* allocate(size_t n)
+            {
+                return FastMem_Alloc((void*)FASTMEM_ADDR, n, NULL);
+            }
 
-// TODO - replace this with real EASTL
-namespace eastl
-{
-    template <typename T, typename Allocator>
-    class __declspec(align(4)) VectorBase
-    {
-    public:
-        T* mpBegin = NULL;
-        T* mpEnd = NULL;
-        T* mpCapacity = NULL;
-        Allocator mAllocator;
-    };
+            inline void* allocate(size_t n, size_t, size_t)
+            {
+                return FastMem_Alloc((void*)FASTMEM_ADDR, n, NULL);
+            }
 
-    template <typename T, typename Allocator>
-    class vector : public VectorBase<T, Allocator> {};
+            inline void* deallocate(void* p, size_t n)
+            {
+                return FastMem_Free((void*)FASTMEM_ADDR, p, n, NULL);
+            }
+        };
+    }
 }
 
 #endif // GAMEDEFS_H

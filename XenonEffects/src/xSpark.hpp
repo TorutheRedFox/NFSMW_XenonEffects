@@ -23,8 +23,10 @@ extern float SparkIntensity;
 
 #include <UMath/UMath.h>
 #include <Attrib/Attrib.h>
+#include <EASTL/vector.h>
 #include <cmath>
 #include <vector>
+#include "Speed/src/GameDefs.h"
 
 struct XenonEffectDef
 {
@@ -34,10 +36,7 @@ struct XenonEffectDef
     struct EmitterGroup* piggyback_effect = NULL;
 };
 
-class XenonFXVec : public std::vector<XenonEffectDef>//public eastl::vector<XenonEffectDef, bstl::allocator>
-{
-};
-
+typedef eastl::vector<XenonEffectDef, UTL::Std::Allocator> XenonFXVec;
 class XenonEffectList : public XenonFXVec
 {
 };

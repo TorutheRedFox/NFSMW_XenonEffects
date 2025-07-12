@@ -67,6 +67,44 @@ void __declspec(naked) sub_736EA0()
     }
 }
 
+#if _DEBUG
+void* bMalloc(int size, const char* debug_text, int debug_line, int allocation_params) {
+    return bWareMalloc(size, debug_text, debug_line, allocation_params);
+}
+#else
+void* bMalloc(int size, int allocation_params) {
+    return bWareMalloc(size, NULL, 0, allocation_params);
+}
+#endif
+
+#if _DEBUG
+#define bMALLOC(size, debug_text, debug_line, allocation_params) bMalloc((size), (debug_text), (debug_line), (allocation_params))
+#else
+#define bMALLOC(size, debug_text, debug_line, allocation_params) bMalloc((size), (allocation_params))
+#endif
+
+_NODISCARD _Ret_notnull_ _Post_writable_byte_size_(size) _VCRT_ALLOCATOR
+void* operator new(size_t size)
+{
+    return bMALLOC(size, NULL, 0, NULL);
+}
+
+void operator delete(void* ptr)
+{
+    bFree(ptr);
+}
+
+void* operator new[](size_t size, const char* pName, int flags, unsigned debugFlags, const char* file, int line)
+{
+    return bMALLOC(size, pName, line, flags);
+}
+
+void* operator new[](size_t size, size_t alignment, size_t alignmentOffset, const char* pName,
+    int flags, unsigned debugFlags, const char* file, int line)
+{
+    return bMALLOC(size, pName, line, flags);
+}
+
 // note: unk_9D7880 == unk_8A3028
 
 void ReleaseRenderObj()
@@ -471,13 +509,21 @@ int Init()
 	return 0;
 }
 
+bool (*CheckMultipleInstance)(const char*, int);
+static bool EarlyInitializeEverythingHook(const char* a, int b)
+{
+    bool result = CheckMultipleInstance(a, b);
+    InitConfig();
+    Init();
+    return result;
+}
 
 BOOL APIENTRY DllMain(HMODULE /*hModule*/, DWORD reason, LPVOID /*lpReserved*/)
 {
 	if (reason == DLL_PROCESS_ATTACH)
 	{
-        InitConfig();
-		Init();
+        // defer mod init until the game itself has initialized so we can use bWare
+        CheckMultipleInstance = injector::MakeCALL(0x666597, EarlyInitializeEverythingHook, true).get();
 	}
 	return TRUE;
 }
