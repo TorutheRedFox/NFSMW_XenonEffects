@@ -525,7 +525,8 @@ BOOL APIENTRY DllMain(HMODULE /*hModule*/, DWORD reason, LPVOID /*lpReserved*/)
 {
 	if (reason == DLL_PROCESS_ATTACH)
 	{
-        // defer mod init until the game itself has initialized so we can use bWare
+        // defer mod init until the game itself has initialized
+        // so we can safely allocate memory
         CheckMultipleInstance = injector::MakeCALL(0x666597, EarlyInitializeEverythingHook, true).get();
 	}
 	return TRUE;
