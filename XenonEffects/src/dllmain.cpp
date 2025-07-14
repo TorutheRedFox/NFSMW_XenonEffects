@@ -3,7 +3,8 @@
 // by Xan/Tenjoin
 
 // BUG LIST:
-// - particles stay in the world after restart - MAKE A XENON EFFECT RESET
+// - There's usually an explosion of contrails after unpausing the game.
+//   This is a bug caused by Black Box's implementation, so a fix for it is optional.
 //
 
 #include <EABase/eabase.h>
@@ -37,7 +38,7 @@ bool bBounceParticles = true;
 //bool bCarbonBounceBehavior = false;
 bool bFadeOutParticles = false;
 bool bCGIntensityBehavior = false;
-float ContrailTargetFPS = 30.0f;
+float ContrailTargetFPS = 60.0f;
 float SparkTargetFPS = 60.0f;
 float ContrailSpeed = 44.0f;
 float ContrailMinIntensity = 0.1f;
@@ -115,16 +116,10 @@ void ReleaseRenderObj()
     NGSpriteManager.Reset();
 }
 
-void __stdcall EmitterSystem_Render_Hook(eView* view)
+void __fastcall EmitterSystem_Render_Hook(void* that, int, eView* view)
 {
-    void* that;
-    _asm mov that, ecx
-
     EmitterSystem_Render(that, view);
-    if (*(uint32_t*)GAMEFLOWSTATUS_ADDR == 6)
-    {
-        NGSpriteManager.RenderAll(view);
-    }
+    NGSpriteManager.RenderAll(view);
     //printf("VertexBuffer: 0x%X\n", mpVB);
 }
 
@@ -151,13 +146,10 @@ uint32_t sub_6DFAF0_hook()
     return sub_6DFAF0();
 }
 
-void __stdcall EmitterSystem_Update_Hook(float dt)
+void __fastcall EmitterSystem_Update_Hook(void* that, int, float dt)
 {
-    uint32_t that;
-    _asm mov that, ecx
-    EmitterSystem_UpdateParticles((void*)that, dt);
-    if (*(uint32_t*)GAMEFLOWSTATUS_ADDR == 6)
-        UpdateXenonEmitters(dt);
+    EmitterSystem_UpdateParticles(that, dt);
+    UpdateXenonEmitters(dt);
 }
 
 uint32_t RescueESI = 0;
@@ -302,11 +294,8 @@ void __stdcall CarRenderConn_UpdateContrails(void* CarRenderConn, void* PktCarSe
     (void)param; // silence
 }
 
-void __stdcall CarRenderConn_UpdateEngineAnimation_Hook(float param, void* PktCarService)
+void __fastcall CarRenderConn_UpdateEngineAnimation_Hook(uint32_t that, int, float param, void* PktCarService)
 {
-    uint32_t that;
-    _asm mov that, ecx
-
     CarRenderConn_UpdateEngineAnimation((void*)that, param, PktCarService);
 
     *(uint32_t*)(that + 0x400) = 0;
