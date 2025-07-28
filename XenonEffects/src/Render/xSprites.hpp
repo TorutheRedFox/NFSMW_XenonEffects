@@ -198,7 +198,7 @@ public:
     void Lock()
     {
         mCurrViewBuffer = mNumViews;
-        mNumViews = (mNumViews + 1) % NumViews;
+        //mNumViews = (mNumViews + 1) % NumViews;
         mSprintListView[mCurrViewBuffer].Lock();
     }
 

@@ -44,7 +44,8 @@ float ContrailSpeed = 44.0f;
 float ContrailMinIntensity = 0.1f;
 float ContrailMaxIntensity = 0.75f;
 float SparkIntensity = 1.0f;
-char TPKfilename[128] = { "GLOBAL\\XenonEffects.tpk" };
+char TPKfilename[MAX_PATH] = { "GLOBAL\\XenonEffects.tpk" };
+char INIPath[MAX_PATH] = { '\0' };
 
 void __stdcall LoadResourceFile(char* filename, int ResType, int unk1, void* unk2, void* unk3, int unk4, int unk5)
 {
@@ -326,7 +327,7 @@ bool bValidateHexString(char* str)
 
 void InitConfig()
 {
-    mINI::INIFile inifile("NFSMW_XenonEffects.ini");
+    mINI::INIFile inifile(INIPath);
     mINI::INIStructure ini;
     inifile.read(ini);
 
@@ -517,6 +518,7 @@ BOOL APIENTRY DllMain(HMODULE /*hModule*/, DWORD reason, LPVOID /*lpReserved*/)
         // defer mod init until the game itself has initialized
         // so we can safely allocate memory
         CheckMultipleInstance = injector::MakeCALL(0x666597, EarlyInitializeEverythingHook, true).get();
+        GetFullPathNameA("NFSMW_XenonEffects.ini", MAX_PATH, INIPath, NULL);
 	}
 	return TRUE;
 }
